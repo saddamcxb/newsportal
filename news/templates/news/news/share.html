@@ -1,0 +1,427 @@
+{% extends "news/base.html" %}
+{% load static %}
+
+{% block title %}Share "{{ news.title }}" - বাংলাদেশ কন্ঠ{% endblock %}
+
+{% block meta %}
+<meta property="og:title" content="Share {{ news.title }}">
+<meta property="og:description" content="Share this interesting news article with your friends and family">
+<meta property="og:image" content="{{ news.image.url|default:'/static/images/share-default.jpg' }}">
+{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10">
+            
+            <!-- Modern Share Card -->
+            <div class="share-card rounded-4 overflow-hidden shadow-lg">
+                <!-- Header Gradient -->
+                <div class="share-header p-4 text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <h1 class="display-6 fw-bold mb-2">
+                                <i class="fas fa-share-alt me-2"></i> Share Article
+                            </h1>
+                            <p class="opacity-90 mb-0">Spread knowledge. Share this article with someone who'd love it.</p>
+                        </div>
+                        <div class="share-icon-bg bg-white bg-opacity-25 rounded-circle p-3">
+                            <i class="fas fa-envelope-open-text fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body p-4 bg-white">
+                    {% if sent %}
+                        <!-- Success State -->
+                        <div class="success-animation text-center py-4">
+                            <div class="checkmark-circle mx-auto mb-4">
+                                <div class="checkmark draw"></div>
+                            </div>
+                            <h3 class="fw-bold text-success mb-3">Successfully Shared! 🎉</h3>
+                            <p class="text-muted mb-4">
+                                "<strong>{{ news.title|truncatechars:60 }}</strong>" was successfully sent to 
+                                <strong class="text-primary">{{ form.cleaned_data.to }}</strong>
+                            </p>
+                            
+                            <!-- Preview Card -->
+                            <div class="preview-card bg-light rounded-3 p-3 mb-4 text-start">
+                                <div class="d-flex gap-3">
+                                    {% if news.image %}
+                                    <img src="{{ news.image.url }}" alt="{{ news.title }}" 
+                                         style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">
+                                    {% endif %}
+                                    <div>
+                                        <h6 class="fw-bold mb-1">{{ news.title|truncatechars:50 }}</h6>
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock me-1"></i> {{ news.publish|date:"F j, Y" }}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex gap-3 justify-content-center">
+                                <a href="{% url 'news:news_list' %}" class="btn btn-outline-primary px-4 py-2 rounded-pill">
+                                    <i class="fas fa-home me-2"></i> Back to Home
+                                </a>
+                                <a href="{{ news.get_absolute_url }}" class="btn btn-primary px-4 py-2 rounded-pill">
+                                    <i class="fas fa-book-open me-2"></i> Read Article
+                                </a>
+                            </div>
+                        </div>
+                    {% else %}
+                        <!-- Share Form -->
+                        <form method="post" class="needs-validation" novalidate id="shareForm">
+                            {% csrf_token %}
+                            
+                            <!-- Article Preview Card -->
+                            <div class="article-preview bg-light rounded-3 p-3 mb-4">
+                                <div class="d-flex gap-3">
+                                    {% if news.image %}
+                                    <img src="{{ news.image.url }}" alt="{{ news.title }}" 
+                                         style="width: 70px; height: 70px; object-fit: cover; border-radius: 8px;">
+                                    {% else %}
+                                    <div class="bg-primary bg-opacity-10 rounded-3 d-flex align-items-center justify-content-center" 
+                                         style="width: 70px; height: 70px;">
+                                        <i class="fas fa-newspaper fa-2x text-primary"></i>
+                                    </div>
+                                    {% endif %}
+                                    <div>
+                                        <h6 class="fw-bold mb-1">{{ news.title|truncatechars:60 }}</h6>
+                                        <small class="text-muted">
+                                            <i class="fas fa-user me-1"></i> {{ news.author }}
+                                            <span class="mx-1">•</span>
+                                            <i class="fas fa-eye me-1"></i> {{ news.views }} views
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Form Fields with Modern Styling -->
+                            {% for field in form %}
+                            <div class="form-group mb-4">
+                                <label for="{{ field.id_for_label }}" class="form-label fw-semibold mb-2">
+                                    {% if field.name == 'name' %}
+                                        <i class="fas fa-user-circle me-2 text-primary"></i>
+                                    {% elif field.name == 'email' %}
+                                        <i class="fas fa-envelope me-2 text-primary"></i>
+                                    {% elif field.name == 'to' %}
+                                        <i class="fas fa-user-friends me-2 text-primary"></i>
+                                    {% elif field.name == 'comments' %}
+                                        <i class="fas fa-comment-dots me-2 text-primary"></i>
+                                    {% endif %}
+                                    {{ field.label }}
+                                    {% if field.field.required %}
+                                        <span class="text-danger">*</span>
+                                    {% endif %}
+                                </label>
+                                
+                                {{ field }}
+                                
+                                {% if field.help_text %}
+                                    <div class="form-text text-muted small mt-1">{{ field.help_text }}</div>
+                                {% endif %}
+                                
+                                {% for error in field.errors %}
+                                    <div class="invalid-feedback d-block mt-1">
+                                        <i class="fas fa-exclamation-circle me-1"></i> {{ error }}
+                                    </div>
+                                {% endfor %}
+                                
+                                {% if field.name == 'comments' %}
+                                    <div class="mt-2">
+                                        <small class="text-muted" id="charCount">0/500 characters</small>
+                                        <div class="progress mt-1" style="height: 3px;">
+                                            <div class="progress-bar bg-primary" style="width: 0%"></div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+
+                            <!-- Submit Button with Loading State -->
+                            <button type="submit" class="btn btn-primary w-100 py-3 fw-semibold rounded-pill mt-2" id="submitBtn">
+                                <span class="btn-text">
+                                    <i class="fas fa-paper-plane me-2"></i> Send Email
+                                </span>
+                                <span class="btn-loading d-none">
+                                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                    Sending...
+                                </span>
+                            </button>
+                            
+                            <p class="text-muted text-center small mt-3 mb-0">
+                                <i class="fas fa-lock me-1"></i> We respect your privacy. Email addresses are never stored.
+                            </p>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Additional Share Options -->
+            <div class="text-center mt-4">
+                <p class="text-muted mb-3">Or share directly via:</p>
+                <div class="d-flex gap-2 justify-content-center">
+                    <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri|urlencode }}" 
+                       target="_blank" class="btn btn-outline-primary rounded-circle" style="width: 40px; height: 40px;">
+                        <i class="fab fa-facebook-f"></i>
+                    </a>
+                    <a href="https://twitter.com/intent/tweet?text={{ news.title|urlencode }}&url={{ request.build_absolute_uri|urlencode }}" 
+                       target="_blank" class="btn btn-outline-info rounded-circle" style="width: 40px; height: 40px;">
+                        <i class="fab fa-twitter"></i>
+                    </a>
+                    <a href="https://wa.me/?text={{ news.title|urlencode }}%20{{ request.build_absolute_uri|urlencode }}" 
+                       target="_blank" class="btn btn-outline-success rounded-circle" style="width: 40px; height: 40px;">
+                        <i class="fab fa-whatsapp"></i>
+                    </a>
+                    <a href="https://www.linkedin.com/shareArticle?mini=true&url={{ request.build_absolute_uri|urlencode }}&title={{ news.title|urlencode }}" 
+                       target="_blank" class="btn btn-outline-secondary rounded-circle" style="width: 40px; height: 40px;">
+                        <i class="fab fa-linkedin-in"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom CSS for Modern Design -->
+<style>
+    /* Share Card */
+    .share-card {
+        background: white;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .share-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.12) !important;
+    }
+    
+    /* Share Icon Background */
+    .share-icon-bg {
+        transition: transform 0.3s ease;
+    }
+    
+    .share-icon-bg:hover {
+        transform: scale(1.1);
+    }
+    
+    /* Form Inputs */
+    .form-control, .form-select, textarea {
+        border: 2px solid #e9ecef;
+        padding: 12px 15px;
+        transition: all 0.3s ease;
+        font-size: 1rem;
+        border-radius: 12px;
+    }
+    
+    .form-control:focus, .form-select:focus, textarea:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    }
+    
+    textarea {
+        resize: vertical;
+        min-height: 100px;
+    }
+    
+    /* Success Animation */
+    .checkmark-circle {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: #28a745;
+        position: relative;
+        animation: scaleUp 0.5s ease;
+    }
+    
+    .checkmark {
+        width: 40px;
+        height: 20px;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -60%) rotate(-45deg);
+    }
+    
+    .checkmark.draw::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 40px;
+        height: 20px;
+        border-left: 3px solid white;
+        border-bottom: 3px solid white;
+        animation: drawCheck 0.5s ease 0.2s forwards;
+        opacity: 0;
+    }
+    
+    @keyframes drawCheck {
+        from {
+            width: 0;
+            height: 0;
+            opacity: 0;
+        }
+        to {
+            width: 40px;
+            height: 20px;
+            opacity: 1;
+        }
+    }
+    
+    @keyframes scaleUp {
+        from {
+            transform: scale(0);
+            opacity: 0;
+        }
+        to {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+    
+    /* Loading State */
+    .btn-loading {
+        display: inline-flex;
+        align-items: center;
+    }
+    
+    /* Article Preview */
+    .article-preview {
+        transition: all 0.3s ease;
+    }
+    
+    .article-preview:hover {
+        background: #e9ecef !important;
+    }
+    
+    /* Character Counter Progress Bar */
+    .progress-bar {
+        transition: width 0.3s ease;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .share-header h1 {
+            font-size: 1.5rem;
+        }
+        
+        .share-icon-bg {
+            width: 50px;
+            height: 50px;
+        }
+        
+        .share-icon-bg i {
+            font-size: 1.5rem;
+        }
+        
+        .form-control, .form-select, textarea {
+            font-size: 0.9rem;
+        }
+    }
+</style>
+
+<!-- JavaScript for Enhanced UX -->
+<script>
+    // Character counter for comments
+    const commentsField = document.querySelector('textarea[name="comments"]');
+    const charCount = document.getElementById('charCount');
+    const progressBar = document.querySelector('.progress-bar');
+    
+    if (commentsField) {
+        const maxLength = 500;
+        
+        function updateCharCount() {
+            const currentLength = commentsField.value.length;
+            const remaining = maxLength - currentLength;
+            const percentage = (currentLength / maxLength) * 100;
+            
+            if (charCount) {
+                charCount.innerHTML = `${currentLength}/${maxLength} characters`;
+                if (remaining < 0) {
+                    charCount.style.color = '#dc3545';
+                } else if (remaining < 50) {
+                    charCount.style.color = '#ffc107';
+                } else {
+                    charCount.style.color = '#6c757d';
+                }
+            }
+            
+            if (progressBar) {
+                progressBar.style.width = `${Math.min(percentage, 100)}%`;
+                if (percentage > 90) {
+                    progressBar.classList.add('bg-danger');
+                    progressBar.classList.remove('bg-primary');
+                } else if (percentage > 70) {
+                    progressBar.classList.add('bg-warning');
+                    progressBar.classList.remove('bg-primary');
+                } else {
+                    progressBar.classList.add('bg-primary');
+                    progressBar.classList.remove('bg-danger', 'bg-warning');
+                }
+            }
+        }
+        
+        commentsField.addEventListener('input', updateCharCount);
+        updateCharCount();
+    }
+    
+    // Form submission with loading state
+    const shareForm = document.getElementById('shareForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const btnText = document.querySelector('.btn-text');
+    const btnLoading = document.querySelector('.btn-loading');
+    
+    if (shareForm) {
+        shareForm.addEventListener('submit', function(e) {
+            if (shareForm.checkValidity()) {
+                submitBtn.disabled = true;
+                btnText.classList.add('d-none');
+                btnLoading.classList.remove('d-none');
+            }
+        });
+    }
+    
+    // Bootstrap form validation
+    (function() {
+        'use strict';
+        const forms = document.querySelectorAll('.needs-validation');
+        Array.from(forms).forEach(form => {
+            form.addEventListener('submit', event => {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    })();
+    
+    // Add smooth animation on load
+    document.addEventListener('DOMContentLoaded', function() {
+        const shareCard = document.querySelector('.share-card');
+        if (shareCard) {
+            shareCard.style.opacity = '0';
+            shareCard.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                shareCard.style.transition = 'all 0.5s ease';
+                shareCard.style.opacity = '1';
+                shareCard.style.transform = 'translateY(0)';
+            }, 100);
+        }
+    });
+    
+    // Add tooltips to social share buttons
+    const socialButtons = document.querySelectorAll('.btn-outline-primary, .btn-outline-info, .btn-outline-success, .btn-outline-secondary');
+    socialButtons.forEach(btn => {
+        btn.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+        });
+        btn.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+    });
+</script>
+
+{% endblock %}

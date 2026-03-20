@@ -1,0 +1,319 @@
+{% extends "news/base.html" %}
+
+{% block title %}নবকাল নিউজ | সর্বশেষ সংবাদ ও খবর{% endblock %}
+
+{% block content %}
+<!-- Breaking News Ticker (Modernized) -->
+<div class="breaking-news-wrapper mb-4">
+    <div class="container px-0">
+        <div class="breaking-news-card d-flex align-items-center bg-danger text-white rounded-3 shadow-lg overflow-hidden" 
+             style="background: linear-gradient(145deg, #dc3545 0%, #b02a37 100%);">
+            <span class="breaking-label py-3 px-4 fw-bold d-flex align-items-center" 
+                  style="background: rgba(0,0,0,0.15); white-space: nowrap;">
+                <i class="fas fa-bolt me-2" style="animation: flash 1s infinite;"></i>
+                <span class="d-none d-sm-inline">BREAKING</span>
+            </span>
+            <div class="news-ticker flex-grow-1 py-3 px-3" style="overflow: hidden;">
+                <div class="news-ticker-content d-flex" style="animation: ticker 30s linear infinite;">
+                    {% for bn in breaking_news %}
+                    <span class="me-5 d-flex align-items-center">
+                        <i class="fas fa-circle me-2" style="font-size: 6px; color: #ffdfb0;"></i>
+                        {{ bn.title }}
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+            <a href="#" class="text-white text-decoration-none px-4 d-none d-md-block" 
+               style="background: rgba(0,0,0,0.1); height: 100%; display: flex; align-items: center;">
+                <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row g-4">
+        <!-- Main News Section (Left Column) -->
+        <div class="col-lg-8">
+            <!-- Section Header with Dynamic Category -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="section-title mb-0">
+                    {% if category %}
+                        <span class="text-primary">{{ category.name }}</span>
+                    {% else %}
+                        <span class="text-primary">সর্বশেষ সংবাদ</span>
+                    {% endif %}
+                </h1>
+                <span class="text-muted small bg-light py-2 px-3 rounded-pill">
+                    <i class="far fa-newspaper me-1"></i> {{ news.paginator.count }} টি সংবাদ
+                </span>
+            </div>
+
+            <!-- Featured First Article (if exists) -->
+            {% if news and news.0 %}
+            <div class="featured-article mb-5">
+                <div class="card border-0 rounded-4 overflow-hidden shadow-lg">
+                    {% if news.0.image %}
+                    <div class="position-relative">
+                        <a href="{{ news.0.get_absolute_url }}" class="d-block">
+                            <img src="{{ news.0.image.url }}" 
+                                 class="w-100" 
+                                 alt="{{ news.0.title }}"
+                                 style="height: 450px; object-fit: cover; object-position: center;">
+                        </a>
+                        <div class="position-absolute bottom-0 start-0 end-0 p-4" 
+                             style="background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);">
+                            <span class="badge bg-primary mb-2">{{ news.0.category.name }}</span>
+                            <h2 class="text-white h3 fw-bold">
+                                <a href="{{ news.0.get_absolute_url }}" class="text-white text-decoration-none">
+                                    {{ news.0.title }}
+                                </a>
+                            </h2>
+                            <p class="text-white-50 small mb-0">
+                                <i class="far fa-clock me-1"></i> {{ news.0.publish|date:"F j, Y" }} 
+                                <span class="mx-2">•</span>
+                                <i class="far fa-user me-1"></i> {{ news.0.author }}
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            <!-- Skip first article in loop -->
+            {% endif %}
+
+            <!-- News List (start from index 1 if featured exists) -->
+            {% for news_item in news %}
+                {% if not forloop.first or not news.0.image %}
+                <article class="card mb-4 border-0 shadow-sm rounded-3 overflow-hidden hover-lift">
+                    <div class="row g-0">
+                        {% if news_item.image %}
+                        <div class="col-md-4">
+                            <a href="{{ news_item.get_absolute_url }}" class="d-block h-100">
+                                <img src="{{ news_item.image.url }}" 
+                                     class="img-fluid h-100 w-100" 
+                                     alt="{{ news_item.title }}"
+                                     style="object-fit: cover; min-height: 200px;">
+                            </a>
+                        </div>
+                        <div class="col-md-8">
+                        {% else %}
+                        <div class="col-12">
+                        {% endif %}
+                            <div class="card-body p-4">
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill">
+                                        {{ news_item.category.name }}
+                                    </span>
+                                    <span class="text-muted small ms-3">
+                                        <i class="far fa-calendar-alt me-1"></i> {{ news_item.publish|date:"M d, Y" }}
+                                    </span>
+                                </div>
+                                
+                                <h3 class="card-title h5 fw-bold mb-3">
+                                    <a href="{{ news_item.get_absolute_url }}" class="text-dark text-decoration-none">
+                                        {{ news_item.title }}
+                                    </a>
+                                </h3>
+                                
+                                <p class="card-text text-secondary mb-3">
+                                    {{ news_item.body|truncatewords:25|striptags }}
+                                </p>
+                                
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div class="d-flex gap-2">
+                                        <a href="{{ news_item.get_absolute_url }}" class="btn btn-primary btn-sm rounded-pill px-4">
+                                            বিস্তারিত পড়ুন <i class="fas fa-arrow-right ms-1"></i>
+                                        </a>
+                                        <button class="btn btn-outline-secondary btn-sm rounded-circle" 
+                                                onclick="shareNews('{{ news_item.get_absolute_url }}')"
+                                                title="শেয়ার করুন">
+                                            <i class="fas fa-share"></i>
+                                        </button>
+                                    </div>
+                                    <span class="text-muted small">
+                                        <i class="far fa-eye me-1"></i> {{ news_item.views|default:"0" }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+                {% endif %}
+            {% empty %}
+            <div class="text-center py-5">
+                <img src="#" alt="No news" class="mb-4" style="max-width: 200px;">
+                <h4 class="text-secondary">কোনো সংবাদ পাওয়া যায়নি</h4>
+                <p class="text-muted">এই বিভাগে এখনও কোনো সংবাদ যোগ করা হয়নি।</p>
+            </div>
+            {% endfor %}
+
+            <!-- Pagination -->
+            <div class="mt-5">
+                {% include "news/includes/pagination.html" with page=news %}
+            </div>
+        </div>
+
+        <!-- Sidebar (Right Column) -->
+        <div class="col-lg-4">
+            <!-- Search Widget -->
+            <div class="card border-0 shadow-sm rounded-3 mb-4 sticky-sidebar">
+                <div class="card-body p-4">
+                    <h5 class="card-title fw-bold mb-3">খুঁজুন</h5>
+                    <form action="{% url 'news:search' %}" method="get" class="search-widget">
+                        <div class="input-group">
+                            <input type="text" class="form-control border-0 bg-light" 
+                                   placeholder="সংবাদ অনুসন্ধান..." name="query" required>
+                            <button class="btn btn-primary" type="submit">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Categories Card -->
+            <div class="card border-0 shadow-sm rounded-3 mb-4">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h5 class="fw-bold mb-0">
+                        <i class="fas fa-th-large me-2 text-primary"></i>
+                        বিভাগসমূহ
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for cat in categories %}
+                        <a href="{% url 'news:news_list_by_category' cat.slug %}" 
+                           class="list-group-item list-group-item-action d-flex justify-content-between align-items-center px-4 py-3 border-0 hover-bg-light">
+                            <span>
+                                <i class="fas fa-folder-open me-2 text-warning opacity-75"></i>
+                                {{ cat.name }}
+                            </span>
+                            <span class="badge bg-primary rounded-pill">{{ cat.news_set.count }}</span>
+                        </a>
+                        {% empty %}
+                        <div class="px-4 py-3 text-muted">কোনো বিভাগ নেই</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Most Viewed / Popular News -->
+            <div class="card border-0 shadow-sm rounded-3 mb-4">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h5 class="fw-bold mb-0">
+                        <i class="fas fa-fire me-2 text-danger"></i>
+                        সর্বাধিক পঠিত
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for popular_news in most_viewed_news|slice:":5" %}
+                        <a href="{{ popular_news.get_absolute_url }}" 
+                           class="list-group-item list-group-item-action px-4 py-3 border-0">
+                            <div class="d-flex">
+                                <span class="fw-bold text-primary me-3">{{ forloop.counter }}.</span>
+                                <div>
+                                    <h6 class="mb-1 fw-semibold">{{ popular_news.title|truncatewords:8 }}</h6>
+                                    <small class="text-muted">
+                                        <i class="far fa-eye me-1"></i> {{ popular_news.views }} বার দেখা
+                                    </small>
+                                </div>
+                            </div>
+                        </a>
+                        {% empty %}
+                        <div class="px-4 py-3 text-muted">জনপ্রিয় সংবাদ নেই</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Styles -->
+<style>
+    /* Modern animations */
+    @keyframes flash {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+
+    @keyframes ticker {
+        0% { transform: translateX(100%); }
+        100% { transform: translateX(-300%); }
+    }
+
+    /* Hover lift effect */
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px -8px rgba(0,0,0,0.15) !important;
+    }
+
+    /* Section title */
+    .section-title {
+        position: relative;
+        font-size: 2rem;
+        font-weight: 700;
+    }
+    .section-title:after {
+        content: '';
+        position: absolute;
+        bottom: -10px;
+        left: 0;
+        width: 80px;
+        height: 4px;
+        background: linear-gradient(90deg, #0d6efd, #0b5ed7);
+        border-radius: 2px;
+    }
+
+    /* Sticky sidebar */
+    .sticky-sidebar {
+        position: sticky;
+        top: 90px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .section-title {
+            font-size: 1.5rem;
+        }
+        .featured-article img {
+            height: 250px !important;
+        }
+        .breaking-news-card {
+            border-radius: 0 !important;
+        }
+    }
+
+    /* Newsletter input styling */
+    .newsletter-form input::placeholder {
+        color: rgba(255,255,255,0.7);
+    }
+
+    /* List group hover */
+    .hover-bg-light:hover {
+        background-color: #f8f9fa !important;
+    }
+</style>
+
+<!-- JavaScript for Share Functionality -->
+<script>
+function shareNews(url) {
+    if (navigator.share) {
+        navigator.share({
+            title: 'বাংলাদেশ কন্ঠ',
+            url: window.location.origin + url
+        }).catch(console.error);
+    } else {
+        // Fallback - copy to clipboard
+        navigator.clipboard.writeText(window.location.origin + url);
+        alert('লিঙ্ক কপি করা হয়েছে!');
+    }
+}
+</script>
+{% endblock %}

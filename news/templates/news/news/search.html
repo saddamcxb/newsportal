@@ -1,0 +1,394 @@
+{% extends "news/base.html" %}
+{% load static %}
+
+{% block title %}Search Results for "{{ query }}" - বাংলাদেশ কন্ঠ{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Search results for '{{ query }}'. Find the latest news and updates matching your search.">
+<meta name="robots" content="noindex, follow">
+{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <!-- Search Header with Animation -->
+    <div class="search-header text-center mb-5">
+        <div class="search-icon-wrapper mb-4">
+            <div class="search-icon-circle mx-auto">
+                <i class="fas fa-search fa-3x"></i>
+            </div>
+        </div>
+        <h1 class="display-5 fw-bold mb-3">
+            Search Results
+        </h1>
+        <p class="lead text-muted">
+            Found <span class="fw-bold text-primary">{{ results.paginator.count|default:results.count }}</span> 
+            result{% if results.paginator.count != 1 %}s{% endif %} for 
+            <span class="fw-bold text-primary">"{{ query }}"</span>
+        </p>
+        
+        <!-- Search Form in Results -->
+        <div class="row justify-content-center mt-4">
+            <div class="col-md-6">
+                <form action="{% url 'news:search' %}" method="get" class="search-form">
+                    <div class="input-group input-group-lg shadow-sm">
+                        <input type="text" 
+                               class="form-control border-0 bg-light rounded-start-pill" 
+                               name="query" 
+                               value="{{ query }}" 
+                               placeholder="Search news, articles, topics..."
+                               required>
+                        <button class="btn btn-primary rounded-end-pill px-4" type="submit">
+                            <i class="fas fa-search me-2"></i> Search
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {% if results %}
+        <!-- Search Results -->
+        <div class="row g-4">
+            {% for news in results %}
+            <div class="col-md-6 col-lg-4">
+                <article class="search-result-card card h-100 border-0 shadow-sm rounded-4 overflow-hidden hover-lift">
+                    <!-- Image Section -->
+                    {% if news.image %}
+                    <div class="position-relative overflow-hidden">
+                        <img src="{{ news.image.url }}" 
+                             class="card-img-top" 
+                             alt="{{ news.title }}"
+                             style="height: 200px; object-fit: cover; transition: transform 0.3s ease;">
+                        <div class="position-absolute top-0 end-0 m-3">
+                            <span class="badge bg-primary bg-opacity-90 text-white rounded-pill px-3 py-2">
+                                <i class="far fa-eye me-1"></i> {{ news.views }}
+                            </span>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                        <i class="fas fa-newspaper fa-4x text-muted"></i>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="card-body p-4">
+                        <!-- Category Badge -->
+                        <div class="mb-2">
+                            <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill">
+                                <i class="fas fa-folder-open me-1"></i> {{ news.category.name }}
+                            </span>
+                        </div>
+                        
+                        <!-- Title -->
+                        <h3 class="card-title h5 fw-bold mb-3">
+                            <a href="{{ news.get_absolute_url }}" class="text-decoration-none text-dark stretched-link">
+                                {{ news.title|truncatewords:10 }}
+                            </a>
+                        </h3>
+                        
+                        <!-- Excerpt with highlighted search terms -->
+                        <p class="card-text text-secondary mb-3">
+                            {% with body=news.body|truncatewords:25 %}
+                                {% if query %}
+                                    {{ body|safe }}
+                                {% else %}
+                                    {{ body }}
+                                {% endif %}
+                            {% endwith %}
+                        </p>
+                        
+                        <!-- Meta Information -->
+                        <div class="d-flex align-items-center justify-content-between text-muted small">
+                            <div>
+                                <i class="far fa-calendar-alt me-1"></i> {{ news.publish|date:"M d, Y" }}
+                            </div>
+                            <div>
+                                <i class="far fa-user me-1"></i> {{ news.author|default:"Admin" }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Footer with Read Time -->
+                    <div class="card-footer bg-transparent border-0 pb-4 pt-0 px-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-muted small">
+                                <i class="far fa-clock me-1"></i> 
+                                {% if news.reading_time %}{{ news.reading_time }}{% else %}2{% endif %} min read
+                            </span>
+                            <a href="{{ news.get_absolute_url }}" class="btn btn-sm btn-outline-primary rounded-pill">
+                                Read More <i class="fas fa-arrow-right ms-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                </article>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if results.has_other_pages %}
+        <nav aria-label="Search results pagination" class="mt-5">
+            <ul class="pagination justify-content-center gap-2">
+                {% if results.has_previous %}
+                <li class="page-item">
+                    <a class="page-link rounded-pill px-4" href="?query={{ query }}&page={{ results.previous_page_number }}">
+                        <i class="fas fa-chevron-left me-1"></i> Previous
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% for num in results.paginator.page_range %}
+                    {% if results.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link rounded-pill px-3">{{ num }}</span>
+                    </li>
+                    {% elif num > results.number|add:'-3' and num < results.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link rounded-pill px-3" href="?query={{ query }}&page={{ num }}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if results.has_next %}
+                <li class="page-item">
+                    <a class="page-link rounded-pill px-4" href="?query={{ query }}&page={{ results.next_page_number }}">
+                        Next <i class="fas fa-chevron-right ms-1"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        
+        <!-- Related Searches Suggestion -->
+        {% if related_searches %}
+        <div class="related-searches mt-5 pt-4">
+            <h5 class="fw-bold mb-3"><i class="fas fa-lightbulb me-2 text-warning"></i> Related Searches</h5>
+            <div class="d-flex flex-wrap gap-2">
+                {% for term in related_searches %}
+                <a href="{% url 'news:search' %}?query={{ term|urlencode }}" 
+                   class="badge bg-light text-dark text-decoration-none px-3 py-2 rounded-pill hover-bg-primary">
+                    <i class="fas fa-search me-1"></i> {{ term }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+    {% else %}
+        <!-- No Results Found -->
+        <div class="no-results text-center py-5">
+            <div class="empty-state">
+                <div class="empty-state-icon mb-4">
+                    <i class="fas fa-search fa-5x text-muted"></i>
+                </div>
+                <h3 class="fw-bold mb-3">No results found</h3>
+                <p class="text-muted mb-4">
+                    We couldn't find any articles matching "<strong>{{ query }}</strong>".
+                </p>
+                
+                <!-- Suggestions -->
+                <div class="suggestions text-start mx-auto" style="max-width: 500px;">
+                    <div class="alert alert-light border rounded-3 p-4">
+                        <h6 class="fw-bold mb-3"><i class="fas fa-lightbulb me-2 text-warning"></i> Try these suggestions:</h6>
+                        <ul class="mb-0">
+                            <li class="mb-2">Check your spelling for typos</li>
+                            <li class="mb-2">Use more general keywords</li>
+                            <li class="mb-2">Try different keywords or topics</li>
+                            <li class="mb-2">Browse our <a href="{% url 'news:news_list' %}" class="text-decoration-none">latest news</a></li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Popular Categories -->
+                <div class="popular-categories mt-5">
+                    <h5 class="fw-bold mb-3">Popular Categories</h5>
+                    <div class="d-flex flex-wrap gap-2 justify-content-center">
+                        {% for category in popular_categories %}
+                        <a href="{% url 'news:news_list_by_category' category.slug %}" 
+                           class="btn btn-outline-primary rounded-pill px-4">
+                            <i class="fas fa-folder-open me-1"></i> {{ category.name }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+
+
+<!-- Custom CSS -->
+<style>
+    /* Search Icon Animation */
+    .search-icon-circle {
+        width: 100px;
+        height: 100px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: pulse 2s ease-in-out infinite;
+    }
+    
+    .search-icon-circle i {
+        color: white;
+        animation: none;
+    }
+    
+    @keyframes pulse {
+        0% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.4);
+        }
+        70% {
+            transform: scale(1.05);
+            box-shadow: 0 0 0 15px rgba(102, 126, 234, 0);
+        }
+        100% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(102, 126, 234, 0);
+        }
+    }
+    
+    /* Search Result Card */
+    .search-result-card {
+        transition: all 0.3s ease;
+    }
+    
+    .search-result-card:hover img {
+        transform: scale(1.05);
+    }
+    
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 30px -12px rgba(0,0,0,0.15) !important;
+    }
+    
+    /* Pagination Styling */
+    .page-link {
+        border: none;
+        color: #495057;
+        background-color: #f8f9fa;
+        transition: all 0.2s ease;
+    }
+    
+    .page-link:hover {
+        background-color: #e9ecef;
+        color: #0d6efd;
+        transform: translateY(-2px);
+    }
+    
+    .page-item.active .page-link {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    /* Empty State */
+    .empty-state {
+        animation: fadeInUp 0.5s ease;
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* Search Form */
+    .search-form .form-control:focus {
+        box-shadow: none;
+        border-color: transparent;
+    }
+    
+    /* Hover Effects */
+    .hover-bg-primary:hover {
+        background-color: #0d6efd !important;
+        color: white !important;
+        transition: all 0.2s ease;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .search-icon-circle {
+            width: 70px;
+            height: 70px;
+        }
+        
+        .search-icon-circle i {
+            font-size: 2rem;
+        }
+        
+        .display-5 {
+            font-size: 1.8rem;
+        }
+        
+        .lead {
+            font-size: 1rem;
+        }
+        
+        .search-result-card {
+            margin-bottom: 1rem;
+        }
+    }
+    
+    /* Highlight Search Terms */
+    mark {
+        background-color: rgba(102, 126, 234, 0.2);
+        color: #667eea;
+        padding: 0 2px;
+        border-radius: 3px;
+    }
+</style>
+
+<!-- JavaScript for Enhanced UX -->
+<script>
+    // Highlight search terms in results
+    document.addEventListener('DOMContentLoaded', function() {
+        const query = "{{ query|escapejs }}";
+        if (query) {
+            const searchResults = document.querySelectorAll('.search-result-card .card-text');
+            searchResults.forEach(function(element) {
+                const text = element.innerHTML;
+                const regex = new RegExp(`(${query})`, 'gi');
+                element.innerHTML = text.replace(regex, '<mark>$1</mark>');
+            });
+        }
+    });
+    
+    // Smooth scroll to top when pagination clicked
+    const paginationLinks = document.querySelectorAll('.pagination .page-link');
+    paginationLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            if (!this.hasAttribute('href') || this.getAttribute('href') === '#') return;
+            setTimeout(() => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 100);
+        });
+    });
+    
+    // Add loading state to search form
+    const searchForm = document.querySelector('.search-form');
+    if (searchForm) {
+        searchForm.addEventListener('submit', function() {
+            const submitBtn = this.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Searching...';
+                submitBtn.disabled = true;
+            }
+        });
+    }
+</script>
+
+{% endblock %}
