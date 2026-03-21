@@ -3,8 +3,9 @@
 {% block title %}নবকাল নিউজ | সর্বশেষ সংবাদ ও খবর{% endblock %}
 
 {% block content %}
-<!-- Breaking News Ticker (Modernized) -->
-<div class="breaking-news-wrapper mb-4">
+
+<!-- Breaking News Ticker (Non-sticky, scrolls with page) -->
+<div class="breaking-news-wrapper mb-3">
     <div class="container px-0">
         <div class="breaking-news-card d-flex align-items-center bg-danger text-white rounded-3 shadow-lg overflow-hidden" 
              style="background: linear-gradient(145deg, #dc3545 0%, #b02a37 100%);">
@@ -79,27 +80,22 @@
                     {% endif %}
                 </div>
             </div>
-            <!-- Skip first article in loop -->
             {% endif %}
 
-            <!-- News List (start from index 1 if featured exists) -->
-            {% for news_item in news %}
-                {% if not forloop.first or not news.0.image %}
-                <article class="card mb-4 border-0 shadow-sm rounded-3 overflow-hidden hover-lift">
-                    <div class="row g-0">
-                        {% if news_item.image %}
-                        <div class="col-md-4">
-                            <a href="{{ news_item.get_absolute_url }}" class="d-block h-100">
+            <!-- News List -->
+            <div class="row g-4">
+                {% for news_item in news %}
+                    {% if not forloop.first or not news.0.image %}
+                    <div class="col-md-6">
+                        <article class="card h-100 border-0 shadow-sm rounded-3 overflow-hidden hover-lift">
+                            {% if news_item.image %}
+                            <a href="{{ news_item.get_absolute_url }}" class="d-block overflow-hidden">
                                 <img src="{{ news_item.image.url }}" 
-                                     class="img-fluid h-100 w-100" 
+                                     class="card-img-top" 
                                      alt="{{ news_item.title }}"
-                                     style="object-fit: cover; min-height: 200px;">
+                                     style="height: 200px; object-fit: cover; transition: transform 0.3s ease;">
                             </a>
-                        </div>
-                        <div class="col-md-8">
-                        {% else %}
-                        <div class="col-12">
-                        {% endif %}
+                            {% endif %}
                             <div class="card-body p-4">
                                 <div class="d-flex align-items-center mb-2">
                                     <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill">
@@ -117,7 +113,7 @@
                                 </h3>
                                 
                                 <p class="card-text text-secondary mb-3">
-                                    {{ news_item.body|truncatewords:25|striptags }}
+                                    {{ news_item.body|truncatewords:20|striptags }}
                                 </p>
                                 
                                 <div class="d-flex align-items-center justify-content-between">
@@ -136,17 +132,17 @@
                                     </span>
                                 </div>
                             </div>
-                        </div>
+                        </article>
                     </div>
-                </article>
-                {% endif %}
-            {% empty %}
-            <div class="text-center py-5">
-                <img src="#" alt="No news" class="mb-4" style="max-width: 200px;">
-                <h4 class="text-secondary">কোনো সংবাদ পাওয়া যায়নি</h4>
-                <p class="text-muted">এই বিভাগে এখনও কোনো সংবাদ যোগ করা হয়নি।</p>
+                    {% endif %}
+                {% empty %}
+                <div class="col-12 text-center py-5">
+                    <i class="far fa-frown fa-3x text-muted mb-3"></i>
+                    <h4 class="text-secondary">কোনো সংবাদ পাওয়া যায়নি</h4>
+                    <p class="text-muted">এই বিভাগে এখনও কোনো সংবাদ যোগ করা হয়নি।</p>
+                </div>
+                {% endfor %}
             </div>
-            {% endfor %}
 
             <!-- Pagination -->
             <div class="mt-5">
@@ -156,22 +152,6 @@
 
         <!-- Sidebar (Right Column) -->
         <div class="col-lg-4">
-            <!-- Search Widget -->
-            <div class="card border-0 shadow-sm rounded-3 mb-4 sticky-sidebar">
-                <div class="card-body p-4">
-                    <h5 class="card-title fw-bold mb-3">খুঁজুন</h5>
-                    <form action="{% url 'news:search' %}" method="get" class="search-widget">
-                        <div class="input-group">
-                            <input type="text" class="form-control border-0 bg-light" 
-                                   placeholder="সংবাদ অনুসন্ধান..." name="query" required>
-                            <button class="btn btn-primary" type="submit">
-                                <i class="fas fa-search"></i>
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
             <!-- Categories Card -->
             <div class="card border-0 shadow-sm rounded-3 mb-4">
                 <div class="card-header bg-white border-0 pt-4 px-4">
@@ -233,7 +213,95 @@
 
 <!-- Custom Styles -->
 <style>
-    /* Modern animations */
+    /* Sticky Search Bar - Below Navbar */
+    .sticky-search-section {
+        position: sticky;
+        top: 70px;
+        z-index: 1020;
+        background: rgba(10, 25, 47, 0.98);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        padding: 12px 0;
+        margin-bottom: 20px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .sticky-search-wrapper {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .sticky-search-form {
+        width: 100%;
+    }
+
+    .sticky-search-input-group {
+        display: flex;
+        align-items: center;
+        background: rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(10px);
+        border-radius: 50px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        transition: all 0.3s ease;
+    }
+
+    .sticky-search-input-group:focus-within {
+        background: rgba(255, 255, 255, 0.18);
+        border-color: rgba(255, 255, 255, 0.4);
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+    }
+
+    .sticky-search-icon {
+        padding: 0 15px;
+        color: rgba(255, 255, 255, 0.6);
+    }
+
+    .sticky-search-input {
+        flex: 1;
+        background: transparent;
+        border: none;
+        padding: 12px 0;
+        color: white;
+        font-size: 0.95rem;
+        outline: none;
+    }
+
+    .sticky-search-input::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    .sticky-clear-search,
+    .sticky-voice-search,
+    .sticky-search-submit {
+        background: transparent;
+        border: none;
+        color: rgba(255, 255, 255, 0.7);
+        padding: 0 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 1rem;
+    }
+
+    .sticky-clear-search:hover,
+    .sticky-voice-search:hover,
+    .sticky-search-submit:hover {
+        color: white;
+        transform: scale(1.05);
+    }
+
+    .sticky-voice-search.recording {
+        color: #ff4444;
+        animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+        0% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.7; transform: scale(1.1); }
+        100% { opacity: 1; transform: scale(1); }
+    }
+
+    /* Modern animations for breaking news */
     @keyframes flash {
         0% { opacity: 1; }
         50% { opacity: 0.5; }
@@ -271,28 +339,47 @@
         border-radius: 2px;
     }
 
-    /* Sticky sidebar */
-    .sticky-sidebar {
-        position: sticky;
-        top: 90px;
-    }
-
     /* Responsive */
     @media (max-width: 768px) {
+        .sticky-search-section {
+            top: 60px;
+            padding: 8px 0;
+        }
+        
+        .sticky-search-wrapper {
+            max-width: 100%;
+            padding: 0 15px;
+        }
+        
+        .sticky-search-input {
+            font-size: 0.9rem;
+        }
+        
+        .sticky-search-icon,
+        .sticky-clear-search,
+        .sticky-voice-search,
+        .sticky-search-submit {
+            padding: 0 10px;
+        }
+        
         .section-title {
             font-size: 1.5rem;
         }
+        
         .featured-article img {
             height: 250px !important;
         }
+        
         .breaking-news-card {
             border-radius: 0 !important;
         }
     }
 
-    /* Newsletter input styling */
-    .newsletter-form input::placeholder {
-        color: rgba(255,255,255,0.7);
+    /* Desktop adjustments */
+    @media (min-width: 992px) {
+        .sticky-search-wrapper {
+            max-width: 500px;
+        }
     }
 
     /* List group hover */
@@ -301,8 +388,115 @@
     }
 </style>
 
-<!-- JavaScript for Share Functionality -->
+<!-- JavaScript for Sticky Search Functionality -->
 <script>
+// Sticky search bar functionality
+class StickySearchHandler {
+    constructor() {
+        this.searchInput = document.getElementById('stickySearchInput');
+        this.clearBtn = document.getElementById('stickyClearBtn');
+        this.voiceBtn = document.getElementById('stickyVoiceBtn');
+        this.searchForm = document.querySelector('.sticky-search-form');
+        this.recognition = null;
+        
+        this.init();
+    }
+    
+    init() {
+        if (this.searchInput) {
+            this.bindInputEvents();
+            this.bindClearButton();
+            this.initVoiceSearch();
+            this.bindSubmit();
+        }
+    }
+    
+    bindInputEvents() {
+        this.searchInput.addEventListener('input', (e) => {
+            if (this.clearBtn) {
+                this.clearBtn.style.display = e.target.value.length > 0 ? 'block' : 'none';
+            }
+        });
+        
+        // Check initial value
+        if (this.searchInput.value.length > 0 && this.clearBtn) {
+            this.clearBtn.style.display = 'block';
+        }
+    }
+    
+    bindClearButton() {
+        if (this.clearBtn) {
+            this.clearBtn.addEventListener('click', () => {
+                this.searchInput.value = '';
+                this.clearBtn.style.display = 'none';
+                this.searchInput.focus();
+                
+                // Trigger input event to update any auto-complete
+                this.searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+            });
+        }
+    }
+    
+    initVoiceSearch() {
+        if (!this.voiceBtn) return;
+        
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+            this.recognition = new SpeechRecognition();
+            this.recognition.lang = 'bn-BD';
+            this.recognition.interimResults = false;
+            this.recognition.maxAlternatives = 1;
+            
+            this.voiceBtn.addEventListener('click', () => {
+                if (this.recognition) {
+                    this.recognition.start();
+                    this.voiceBtn.classList.add('recording');
+                }
+            });
+            
+            this.recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                this.searchInput.value = transcript;
+                if (this.clearBtn) {
+                    this.clearBtn.style.display = 'block';
+                }
+                // Auto-submit the search
+                if (this.searchForm) {
+                    this.searchForm.submit();
+                }
+                this.voiceBtn.classList.remove('recording');
+            };
+            
+            this.recognition.onerror = () => {
+                this.voiceBtn.classList.remove('recording');
+            };
+            
+            this.recognition.onend = () => {
+                this.voiceBtn.classList.remove('recording');
+            };
+        } else {
+            this.voiceBtn.style.display = 'none';
+        }
+    }
+    
+    bindSubmit() {
+        if (this.searchForm) {
+            this.searchForm.addEventListener('submit', (e) => {
+                const query = this.searchInput.value.trim();
+                if (!query) {
+                    e.preventDefault();
+                    this.searchInput.focus();
+                    this.searchInput.style.borderColor = '#ff4444';
+                    setTimeout(() => {
+                        this.searchInput.style.borderColor = '';
+                    }, 2000);
+                }
+            });
+        }
+    }
+}
+
+// Share functionality
 function shareNews(url) {
     if (navigator.share) {
         navigator.share({
@@ -315,5 +509,62 @@ function shareNews(url) {
         alert('লিঙ্ক কপি করা হয়েছে!');
     }
 }
+
+// Initialize everything when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    new StickySearchHandler();
+    
+    // Add scroll effect to sticky search section
+    const stickySearch = document.getElementById('stickySearchSection');
+    if (stickySearch) {
+        let lastScrollY = 0;
+        
+        window.addEventListener('scroll', () => {
+            const currentScrollY = window.scrollY;
+            
+            if (currentScrollY > lastScrollY && currentScrollY > 100) {
+                // Scrolling down - shrink the search bar slightly
+                stickySearch.style.padding = '8px 0';
+                stickySearch.style.opacity = '0.95';
+            } else {
+                // Scrolling up or at top - restore
+                stickySearch.style.padding = '12px 0';
+                stickySearch.style.opacity = '1';
+            }
+            
+            lastScrollY = currentScrollY;
+        });
+    }
+});
 </script>
+
+<!-- Optional: Add CSS for smooth transition on scroll -->
+<style>
+    .sticky-search-section {
+        transition: padding 0.3s ease, opacity 0.3s ease;
+    }
+    
+    /* Search input focus effect */
+    .sticky-search-input:focus {
+        box-shadow: none;
+    }
+    
+    /* Remove outline on buttons */
+    .sticky-clear-search:focus,
+    .sticky-voice-search:focus,
+    .sticky-search-submit:focus {
+        outline: none;
+    }
+    
+    /* Add some spacing for the main content */
+    body {
+        scroll-padding-top: 140px;
+    }
+    
+    @media (max-width: 768px) {
+        body {
+            scroll-padding-top: 120px;
+        }
+    }
+</style>
 {% endblock %}

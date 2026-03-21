@@ -427,6 +427,103 @@ def news_search(request):
     return render(request, 'news/news/search.html', context)
 
 
+# views.py - Add these API endpoints
+from django.http import JsonResponse
+from django.db.models import Q, Count
+from .models import News, Category
+
+def search_autocomplete(request):
+    """API endpoint for search auto-complete"""
+    query = request.GET.get('q', '').strip()
+    
+    if not query or len(query) < 2:
+        return JsonResponse({'suggestions': []})
+    
+    # Get matching news titles
+    news_suggestions = News.objects.filter(
+        Q(title__icontains=query) | Q(tags__name__icontains=query),
+        status=News.Status.PUBLISHED
+    ).values('title').annotate(
+        count=Count('id')
+    ).order_by('-count')[:5]
+    
+    # Get matching categories
+    category_suggestions = Category.objects.filter(
+        name__icontains=query
+    ).values('name').annotate(
+        count=Count('news')
+    )[:3]
+    
+    suggestions = []
+    
+    for item in news_suggestions:
+        suggestions.append({
+            'text': item['title'],
+            'type': 'news',
+            'count': item['count']
+        })
+    
+    for item in category_suggestions:
+        suggestions.append({
+            'text': item['name'],
+            'type': 'category',
+            'count': item['count']
+        })
+    
+    return JsonResponse({'suggestions': suggestions[:10]})
+
+
+def search_trending(request):
+    """API endpoint for trending searches"""
+    # This would typically come from analytics data
+    # For demo, return popular categories and tags
+    trending = Category.objects.annotate(
+        search_count=Count('news')
+    ).filter(search_count__gt=0).order_by('-search_count')[:10]
+    
+    data = []
+    for item in trending:
+        data.append({
+            'term': item.name,
+            'count': item.search_count,
+            'increase': 15  # This would come from analytics
+        })
+    
+    return JsonResponse({'trending': data})
+
+
+def search_instant_results(request):
+    """API endpoint for instant search results"""
+    query = request.GET.get('q', '').strip()
+    
+    if not query:
+        return JsonResponse({'results': [], 'total': 0})
+    
+    results = News.objects.filter(
+        Q(title__icontains=query) | 
+        Q(body__icontains=query) |
+        Q(tags__name__icontains=query),
+        status=News.Status.PUBLISHED
+    ).select_related('category')[:6]
+    
+    data = []
+    for news in results:
+        data.append({
+            'id': news.id,
+            'title': news.title,
+            'url': news.get_absolute_url(),
+            'excerpt': news.body[:150] + '...',
+            'image': news.image.url if news.image else None,
+            'category': news.category.name,
+            'date': news.publish.strftime('%b %d, %Y')
+        })
+    
+    return JsonResponse({
+        'results': data,
+        'total': results.count()
+    })
+
+
 @require_POST
 def news_bookmark(request, news_id):
     """

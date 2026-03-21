@@ -32,4 +32,7 @@ urlpatterns = [
     
     # Featured News (optional)
     path('featured/', views.news_list, {'featured_only': True}, name='featured_news'),
+    path('api/autocomplete/', views.search_autocomplete, name='search_autocomplete'),
+    path('api/trending/', views.search_trending, name='search_trending'),
+    path('api/instant-results/', views.search_instant_results, name='search_instant_results'),
 ]

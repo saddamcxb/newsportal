@@ -9,14 +9,10 @@
 {% endblock %}
 
 {% block content %}
-<div class="container my-5">
+<div class="container my-2">
     <!-- Search Header with Animation -->
-    <div class="search-header text-center mb-5">
-        <div class="search-icon-wrapper mb-4">
-            <div class="search-icon-circle mx-auto">
-                <i class="fas fa-search fa-3x"></i>
-            </div>
-        </div>
+    <div class="search-header text-center mb-3">
+
         <h1 class="display-5 fw-bold mb-3">
             Search Results
         </h1>
@@ -202,12 +198,12 @@
                 
                 <!-- Popular Categories -->
                 <div class="popular-categories mt-5">
-                    <h5 class="fw-bold mb-3">Popular Categories</h5>
+                    <h5 class="fw-bold text-dark mb-3">Popular Categories</h5>
                     <div class="d-flex flex-wrap gap-2 justify-content-center">
                         {% for category in popular_categories %}
                         <a href="{% url 'news:news_list_by_category' category.slug %}" 
-                           class="btn btn-outline-primary rounded-pill px-4">
-                            <i class="fas fa-folder-open me-1"></i> {{ category.name }}
+                           class="btn btn-outline-primary rounded-pill px-4 bg-info">
+                            <i class="fas fa-folder-open me-1 text-dark"></i> {{ category.name }}
                         </a>
                         {% endfor %}
                     </div>
