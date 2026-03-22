@@ -1,0 +1,86 @@
+{% extends "news/base.html" %}
+{% load static %}
+
+{% block title %}Delete News - {{ news.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-lg rounded-4">
+                <div class="card-body text-center p-5">
+                    <div class="mb-4">
+                        <div class="danger-icon mx-auto mb-4">
+                            <i class="fas fa-exclamation-triangle fa-4x text-danger"></i>
+                        </div>
+                        <h2 class="fw-bold mb-3">Delete Article?</h2>
+                        <p class="text-muted mb-4">
+                            Are you sure you want to delete "<strong>{{ news.title }}</strong>"?
+                            This action cannot be undone.
+                        </p>
+                    </div>
+                    
+                    <div class="card bg-light mb-4 p-3 text-start">
+                        <div class="d-flex gap-3">
+                            {% if news.image %}
+                            <img src="{{ news.image.url }}" alt="{{ news.title }}" 
+                                 style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">
+                            {% else %}
+                            <div class="bg-secondary bg-opacity-10 rounded-3 d-flex align-items-center justify-content-center" 
+                                 style="width: 80px; height: 80px;">
+                                <i class="fas fa-newspaper fa-2x text-secondary"></i>
+                            </div>
+                            {% endif %}
+                            <div>
+                                <h6 class="fw-bold mb-1">{{ news.title|truncatewords:10 }}</h6>
+                                <small class="text-muted">
+                                    <i class="far fa-calendar-alt me-1"></i> {{ news.publish|date:"M d, Y" }}<br>
+                                    <i class="far fa-eye me-1"></i> {{ news.views }} views
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex gap-3 justify-content-center">
+                            <a href="{% url 'news:my_news' %}" class="btn btn-outline-secondary rounded-pill px-4">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger rounded-pill px-4">
+                                <i class="fas fa-trash me-2"></i>Yes, Delete
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .danger-icon {
+        animation: shake 0.5s ease-in-out;
+    }
+    
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+    }
+    
+    @media (max-width: 768px) {
+        .card-body {
+            padding: 2rem !important;
+        }
+        
+        .d-flex.gap-3 {
+            flex-direction: column;
+        }
+        
+        .d-flex.gap-3 .btn {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}

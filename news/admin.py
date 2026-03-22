@@ -1,85 +1,93 @@
+# admin.py
 from django.contrib import admin
-from django.contrib.admin import SimpleListFilter
-from django.utils.html import format_html, mark_safe
-from django.utils import timezone
-from django.db.models import Count, Sum
+from django.contrib.auth.admin import UserAdmin
+from django.utils.html import format_html
 from django.urls import reverse
-from django.http import HttpResponseRedirect
-from django.contrib import messages
-from .models import News, Category, Comment, NewsView, NewsBookmark
-import csv
-from django.http import HttpResponse
+from django.utils import timezone
+from django.db.models import Count
+from .models import User, Category, News, Comment, NewsView, NewsBookmark
 from django.db import models
 
-# Custom filters
-class PublishDateFilter(SimpleListFilter):
-    title = 'publish period'
-    parameter_name = 'publish_period'
-
-    def lookups(self, request, model_admin):
-        return (
-            ('today', 'Today'),
-            ('this_week', 'This week'),
-            ('this_month', 'This month'),
-            ('last_month', 'Last month'),
-        )
-
-    def queryset(self, request, queryset):
-        if self.value() == 'today':
-            return queryset.filter(publish__date=timezone.now().date())
-        if self.value() == 'this_week':
-            week_ago = timezone.now() - timezone.timedelta(days=7)
-            return queryset.filter(publish__gte=week_ago)
-        if self.value() == 'this_month':
-            month_ago = timezone.now() - timezone.timedelta(days=30)
-            return queryset.filter(publish__gte=month_ago)
-        if self.value() == 'last_month':
-            thirty_days_ago = timezone.now() - timezone.timedelta(days=30)
-            sixty_days_ago = timezone.now() - timezone.timedelta(days=60)
-            return queryset.filter(publish__range=[sixty_days_ago, thirty_days_ago])
-
-
-class PopularNewsFilter(SimpleListFilter):
-    title = 'popularity'
-    parameter_name = 'popularity'
-
-    def lookups(self, request, model_admin):
-        return (
-            ('high', 'High Views (>1000)'),
-            ('medium', 'Medium Views (500-1000)'),
-            ('low', 'Low Views (<500)'),
-        )
-
-    def queryset(self, request, queryset):
-        if self.value() == 'high':
-            return queryset.filter(views__gte=1000)
-        if self.value() == 'medium':
-            return queryset.filter(views__gte=500, views__lt=1000)
-        if self.value() == 'low':
-            return queryset.filter(views__lt=500)
-
-
-# Inline admins
-class CommentInline(admin.TabularInline):
-    model = Comment
-    extra = 0
-    fields = ('name', 'email', 'body', 'active', 'created')
-    readonly_fields = ('name', 'email', 'body', 'created')
-    can_delete = True
-    show_change_link = True
-
-
-class NewsViewInline(admin.TabularInline):
-    model = NewsView
-    extra = 0
-    fields = ('ip_address', 'user', 'viewed_at')
-    readonly_fields = ('ip_address', 'user', 'viewed_at')
-    can_delete = False
-    max_num = 10
+# Custom User Admin
+@admin.register(User)
+class CustomUserAdmin(UserAdmin):
+    """Custom admin interface for User model"""
+    
+    list_display = ('username', 'email', 'get_full_name', 'is_author', 'is_editor', 
+                   'is_staff', 'is_active', 'date_joined', 'profile_thumbnail')
+    list_filter = ('is_author', 'is_editor', 'is_staff', 'is_active', 'date_joined')
+    search_fields = ('username', 'email', 'first_name', 'last_name', 'phone')
+    ordering = ('-date_joined',)
+    
+    fieldsets = UserAdmin.fieldsets + (
+        ('Additional Information', {
+            'fields': ('phone', 'bio', 'profile_picture', 'is_author', 'is_editor', 'last_active'),
+            'classes': ('wide',)
+        }),
+    )
+    
+    add_fieldsets = UserAdmin.add_fieldsets + (
+        ('Additional Information', {
+            'fields': ('email', 'first_name', 'last_name', 'phone', 'bio', 'profile_picture', 'is_author', 'is_editor'),
+            'classes': ('wide',)
+        }),
+    )
+    
+    readonly_fields = ('date_joined', 'last_active', 'profile_thumbnail')
+    
+    actions = ['make_author', 'make_editor', 'remove_author', 'remove_editor', 'activate_users', 'deactivate_users']
+    
+    def get_full_name(self, obj):
+        return obj.get_full_name() or '-'
+    get_full_name.short_description = 'Full Name'
+    get_full_name.admin_order_field = 'first_name'
+    
+    def profile_thumbnail(self, obj):
+        if obj.profile_picture:
+            return format_html('<img src="{}" width="50" height="50" style="border-radius: 50%; object-fit: cover;" />', 
+                             obj.profile_picture.url)
+        return format_html('<div style="width: 50px; height: 50px; background: #6c757d; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;">{}</div>', 
+                         obj.username[0].upper())
+    profile_thumbnail.short_description = 'Profile'
+    
+    def make_author(self, request, queryset):
+        updated = queryset.update(is_author=True)
+        self.message_user(request, f'{updated} users have been granted author status.')
+    make_author.short_description = "Grant author status"
+    
+    def remove_author(self, request, queryset):
+        updated = queryset.update(is_author=False)
+        self.message_user(request, f'{updated} users have had author status removed.')
+    remove_author.short_description = "Remove author status"
+    
+    def make_editor(self, request, queryset):
+        updated = queryset.update(is_editor=True)
+        self.message_user(request, f'{updated} users have been granted editor status.')
+    make_editor.short_description = "Grant editor status"
+    
+    def remove_editor(self, request, queryset):
+        updated = queryset.update(is_editor=False)
+        self.message_user(request, f'{updated} users have had editor status removed.')
+    remove_editor.short_description = "Remove editor status"
+    
+    def activate_users(self, request, queryset):
+        updated = queryset.update(is_active=True)
+        self.message_user(request, f'{updated} users have been activated.')
+    activate_users.short_description = "Activate selected users"
+    
+    def deactivate_users(self, request, queryset):
+        updated = queryset.update(is_active=False)
+        self.message_user(request, f'{updated} users have been deactivated.')
+    deactivate_users.short_description = "Deactivate selected users"
+    
+    def get_queryset(self, request):
+        return super().get_queryset(request).annotate(news_count=Count('news_posts'))
 
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
+    """Category admin interface"""
+    
     list_display = ('name', 'slug', 'news_count', 'is_featured', 'order', 'status_badge')
     list_filter = ('is_featured', 'created_at')
     search_fields = ('name', 'description', 'slug')
@@ -101,7 +109,7 @@ class CategoryAdmin(admin.ModelAdmin):
         }),
     )
     
-    actions = ['make_featured', 'remove_featured', 'export_categories']
+    actions = ['make_featured', 'remove_featured']
     
     def news_count(self, obj):
         count = obj.news.filter(status=News.Status.PUBLISHED).count()
@@ -112,58 +120,31 @@ class CategoryAdmin(admin.ModelAdmin):
     
     def status_badge(self, obj):
         if obj.is_featured:
-            return format_html('<span style="background-color: #28a745; color: white; padding: 3px 8px; border-radius: 4px;">Featured</span>',)
-        return format_html('<span style="background-color: #6c757d; color: white; padding: 3px 8px; border-radius: 4px;">Regular</span>',)
+            return format_html('<span style="background-color: #28a745; color: white; padding: 3px 8px; border-radius: 4px;">★ Featured</span>')
+        return format_html('<span style="background-color: #6c757d; color: white; padding: 3px 8px; border-radius: 4px;">Regular</span>')
     status_badge.short_description = 'Status'
     
     def make_featured(self, request, queryset):
-        queryset.update(is_featured=True)
-        self.message_user(request, f"{queryset.count()} categories marked as featured.")
+        updated = queryset.update(is_featured=True)
+        self.message_user(request, f"{updated} categories marked as featured.")
     make_featured.short_description = "Mark selected as featured"
     
     def remove_featured(self, request, queryset):
-        queryset.update(is_featured=False)
-        self.message_user(request, f"{queryset.count()} categories removed from featured.")
+        updated = queryset.update(is_featured=False)
+        self.message_user(request, f"{updated} categories removed from featured.")
     remove_featured.short_description = "Remove featured from selected"
     
-    def export_categories(self, request, queryset):
-        response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="categories.csv"'
-        
-        writer = csv.writer(response)
-        writer.writerow(['Name', 'Slug', 'Description', 'News Count'])
-        
-        for category in queryset:
-            writer.writerow([
-                category.name,
-                category.slug,
-                category.description,
-                category.news_set.count()
-            ])
-        
-        return response
-    export_categories.short_description = "Export selected to CSV"
-    
     def get_queryset(self, request):
-        queryset = super().get_queryset(request)
-        return queryset.annotate(news_count=Count('news'))
+        return super().get_queryset(request).annotate(news_count=Count('news', filter=models.Q(news__status=News.Status.PUBLISHED)))
 
 
 @admin.register(News)
 class NewsAdmin(admin.ModelAdmin):
+    """News admin interface"""
+    
     list_display = ('title_preview', 'author_link', 'category_badge', 'publish_date', 
-                   'status_badge', 'views_count', 'shares_count', 'comments_count', 'featured_badge')
-    list_filter = (
-        'status',
-        'news_type',
-        'is_featured',
-        'is_sticky',
-        'is_approved',
-        'category',
-        PublishDateFilter,
-        PopularNewsFilter,
-        'author',
-    )
+                   'status_badge', 'views_count', 'comments_count', 'featured_badge')
+    list_filter = ('status', 'news_type', 'is_featured', 'is_sticky', 'is_approved', 'category')
     search_fields = ('title', 'body', 'summary', 'meta_keywords')
     prepopulated_fields = {'slug': ('title',)}
     raw_id_fields = ('author', 'approved_by', 'related_news')
@@ -194,39 +175,36 @@ class NewsAdmin(admin.ModelAdmin):
             'fields': ('meta_title', 'meta_description', 'meta_keywords'),
             'classes': ('collapse',)
         }),
+        ('Statistics', {
+            'fields': ('views', 'unique_views', 'shares', 'reading_time'),
+            'classes': ('collapse',)
+        }),
         ('Moderation', {
             'fields': ('is_approved', 'approved_by', 'approved_at'),
             'classes': ('collapse',)
         }),
     )
     
-    inlines = [CommentInline, NewsViewInline]
+    readonly_fields = ('created', 'updated')
     
     actions = ['make_published', 'make_draft', 'make_featured', 'make_sticky', 
-               'approve_news', 'export_news', 'bulk_update_category']
-    
-    def get_queryset(self, request):
-        queryset = super().get_queryset(request)
-        return queryset.annotate(
-            comments_count=Count('comments', filter=models.Q(comments__active=True))
-        )
+               'approve_news', 'reset_views']
     
     def title_preview(self, obj):
         return format_html(
             '<a href="{}" target="_blank"><strong>{}</strong></a>',
             obj.get_absolute_url(),
-            obj.title[:50] + ('...' if len(obj.title) > 50 else '')
+            obj.title[:70] + ('...' if len(obj.title) > 70 else '')
         )
     title_preview.short_description = 'Title'
     title_preview.admin_order_field = 'title'
     
     def author_link(self, obj):
         if obj.author:
-            url = reverse('admin:auth_user_change', args=[obj.author.id])
+            url = reverse('admin:news_user_change', args=[obj.author.id])
             return format_html('<a href="{}">{}</a>', url, obj.author.get_full_name() or obj.author.username)
         return "-"
     author_link.short_description = 'Author'
-    author_link.admin_order_field = 'author'
     
     def category_badge(self, obj):
         if obj.category:
@@ -235,7 +213,6 @@ class NewsAdmin(admin.ModelAdmin):
                              url, obj.category.name)
         return "-"
     category_badge.short_description = 'Category'
-    category_badge.admin_order_field = 'category'
     
     def publish_date(self, obj):
         if obj.publish > timezone.now():
@@ -258,15 +235,14 @@ class NewsAdmin(admin.ModelAdmin):
             obj.get_status_display()
         )
     status_badge.short_description = 'Status'
-    status_badge.admin_order_field = 'status'
     
     def featured_badge(self, obj):
         badges = []
         if obj.is_featured:
-            badges.append('<span style="background-color: #ffc107; color: black; padding: 2px 6px; border-radius: 3px; margin-right: 2px;">Featured</span>')
+            badges.append('<span style="background-color: #ffc107; color: black; padding: 2px 6px; border-radius: 3px; margin-right: 2px;">★ Featured</span>')
         if obj.is_sticky:
-            badges.append('<span style="background-color: #17a2b8; color: white; padding: 2px 6px; border-radius: 3px;">Sticky</span>')
-        return mark_safe(' '.join(badges)) if badges else '-'
+            badges.append('<span style="background-color: #17a2b8; color: white; padding: 2px 6px; border-radius: 3px;">📌 Sticky</span>')
+        return format_html(' '.join(badges)) if badges else '-'
     featured_badge.short_description = 'Featured/Sticky'
     
     def views_count(self, obj):
@@ -278,17 +254,11 @@ class NewsAdmin(admin.ModelAdmin):
     views_count.short_description = 'Views'
     views_count.admin_order_field = 'views'
     
-    def shares_count(self, obj):
-        return obj.shares
-    shares_count.short_description = 'Shares'
-    shares_count.admin_order_field = 'shares'
-    
     def comments_count(self, obj):
-        count = getattr(obj, 'comments_count', 0)
+        count = obj.comments.filter(active=True).count()
         url = reverse('admin:news_comment_changelist') + f'?news__id__exact={obj.id}'
         return format_html('<a href="{}">{}</a>', url, count)
     comments_count.short_description = 'Comments'
-    comments_count.admin_order_field = 'comments_count'
     
     # Actions
     def make_published(self, request, queryset):
@@ -308,7 +278,7 @@ class NewsAdmin(admin.ModelAdmin):
     
     def make_sticky(self, request, queryset):
         updated = queryset.update(is_sticky=True, sticky_until=timezone.now() + timezone.timedelta(days=7))
-        self.message_user(request, f"{updated} news articles marked as sticky (7 days).")
+        self.message_user(request, f"{updated} news articles marked as sticky for 7 days.")
     make_sticky.short_description = "Mark selected as sticky for 7 days"
     
     def approve_news(self, request, queryset):
@@ -320,50 +290,18 @@ class NewsAdmin(admin.ModelAdmin):
         self.message_user(request, f"{updated} news articles approved.")
     approve_news.short_description = "Approve selected news"
     
-    def export_news(self, request, queryset):
-        response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="news_export.csv"'
-        
-        writer = csv.writer(response)
-        writer.writerow(['Title', 'Author', 'Category', 'Status', 'Views', 'Shares', 'Comments', 'Publish Date'])
-        
-        for news in queryset:
-            writer.writerow([
-                news.title,
-                str(news.author),
-                str(news.category),
-                news.get_status_display(),
-                news.views,
-                news.shares,
-                news.comments.count(),
-                news.publish.strftime('%Y-%m-%d %H:%M')
-            ])
-        
-        return response
-    export_news.short_description = "Export selected to CSV"
-    
-    def bulk_update_category(self, request, queryset):
-        if 'apply' in request.POST:
-            category_id = request.POST.get('new_category')
-            if category_id:
-                updated = queryset.update(category_id=category_id)
-                self.message_user(request, f"{updated} news articles moved to new category.")
-                return HttpResponseRedirect(request.get_full_path())
-        
-        # Show intermediate page with category selection
-        from django.template.response import TemplateResponse
-        return TemplateResponse(request, 'admin/bulk_update_category.html', {
-            'news': queryset,
-            'categories': Category.objects.all(),
-            'action': 'bulk_update_category',
-        })
-    bulk_update_category.short_description = "Bulk update category"
+    def reset_views(self, request, queryset):
+        updated = queryset.update(views=0, unique_views=0)
+        self.message_user(request, f"{updated} news articles view count reset.")
+    reset_views.short_description = "Reset view counts"
 
 
 @admin.register(Comment)
 class CommentAdmin(admin.ModelAdmin):
+    """Comment admin interface"""
+    
     list_display = ('comment_preview', 'name_email', 'news_link', 'created_date', 
-                   'status_badge', 'likes_count', 'spam_score_display')
+                   'status_badge', 'spam_score_display')
     list_filter = ('active', 'is_approved', 'is_spam', 'created', 'news__category')
     search_fields = ('name', 'email', 'body', 'website')
     list_per_page = 50
@@ -387,9 +325,6 @@ class CommentAdmin(admin.ModelAdmin):
     
     actions = ['approve_comments', 'mark_as_spam', 'unmark_spam', 'delete_comments']
     
-    def get_queryset(self, request):
-        return super().get_queryset(request).select_related('news')
-    
     def comment_preview(self, obj):
         return obj.body[:75] + ('...' if len(obj.body) > 75 else '')
     comment_preview.short_description = 'Comment'
@@ -400,7 +335,7 @@ class CommentAdmin(admin.ModelAdmin):
     
     def news_link(self, obj):
         url = reverse('admin:news_news_change', args=[obj.news.id])
-        return format_html('<a href="{}">{}</a>', url, obj.news.title[:30] + '...')
+        return format_html('<a href="{}">{}</a>', url, obj.news.title[:50] + '...')
     news_link.short_description = 'News Article'
     
     def created_date(self, obj):
@@ -411,23 +346,15 @@ class CommentAdmin(admin.ModelAdmin):
     created_date.short_description = 'Created'
     
     def status_badge(self, obj):
-        badges = []
         if obj.is_spam:
-            badges.append('<span style="background-color: #dc3545; color: white; padding: 2px 6px; border-radius: 3px;">Spam</span>')
+            return format_html('<span style="background-color: #dc3545; color: white; padding: 2px 6px; border-radius: 3px;">🚫 Spam</span>')
         elif not obj.active:
-            badges.append('<span style="background-color: #6c757d; color: white; padding: 2px 6px; border-radius: 3px;">Inactive</span>')
+            return format_html('<span style="background-color: #6c757d; color: white; padding: 2px 6px; border-radius: 3px;">Inactive</span>')
         elif obj.is_approved:
-            badges.append('<span style="background-color: #28a745; color: white; padding: 2px 6px; border-radius: 3px;">Approved</span>')
+            return format_html('<span style="background-color: #28a745; color: white; padding: 2px 6px; border-radius: 3px;">✓ Approved</span>')
         else:
-            badges.append('<span style="background-color: #ffc107; color: black; padding: 2px 6px; border-radius: 3px;">Pending</span>')
-        
-        return mark_safe(' '.join(badges)) if badges else '-'
+            return format_html('<span style="background-color: #ffc107; color: black; padding: 2px 6px; border-radius: 3px;">⏳ Pending</span>')
     status_badge.short_description = 'Status'
-    
-    def likes_count(self, obj):
-        return format_html('<span style="color: #28a745;">👍 {}</span> <span style="color: #dc3545;">👎 {}</span>', 
-                         obj.likes, obj.dislikes)
-    likes_count.short_description = 'Likes/Dislikes'
     
     def spam_score_display(self, obj):
         if obj.spam_score > 0:
@@ -454,12 +381,14 @@ class CommentAdmin(admin.ModelAdmin):
     def delete_comments(self, request, queryset):
         count = queryset.count()
         queryset.delete()
-        self.message_user(request, f"{count} comments deleted.", messages.WARNING)
+        self.message_user(request, f"{count} comments deleted.")
     delete_comments.short_description = "Delete selected comments"
 
 
 @admin.register(NewsView)
 class NewsViewAdmin(admin.ModelAdmin):
+    """News view tracking admin"""
+    
     list_display = ('news_title', 'ip_address', 'user', 'viewed_at')
     list_filter = ('viewed_at',)
     search_fields = ('news__title', 'ip_address', 'user__username')
@@ -480,6 +409,8 @@ class NewsViewAdmin(admin.ModelAdmin):
 
 @admin.register(NewsBookmark)
 class NewsBookmarkAdmin(admin.ModelAdmin):
+    """Bookmark admin interface"""
+    
     list_display = ('user', 'news_title', 'created')
     list_filter = ('created',)
     search_fields = ('user__username', 'news__title', 'notes')

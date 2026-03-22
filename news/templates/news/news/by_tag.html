@@ -1,0 +1,235 @@
+{% extends "news/base.html" %}
+{% load static %}
+
+{% block title %}Articles tagged "{{ tag.name }}" - Bangladesh Kantho{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Latest news articles tagged with '{{ tag.name }}'. Find all related news and updates.">
+{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <!-- Header Section -->
+    <div class="tag-header mb-5">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div>
+                <h1 class="display-5 fw-bold mb-2">
+                    <i class="fas fa-tag me-2 text-primary"></i>
+                    Articles tagged "{{ tag.name }}"
+                </h1>
+                <p class="text-muted">
+                    Found {{ news.paginator.count }} article{% if news.paginator.count != 1 %}s{% endif %} 
+                    with this tag
+                </p>
+            </div>
+            <a href="{% url 'news:news_list' %}" class="btn btn-outline-secondary rounded-pill">
+                <i class="fas fa-arrow-left me-2"></i>Back to Home
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            {% if news %}
+                <div class="row g-4">
+                    {% for news_item in news %}
+                    <div class="col-md-6">
+                        <article class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden hover-lift">
+                            {% if news_item.image %}
+                            <a href="{{ news_item.get_absolute_url }}" class="d-block overflow-hidden">
+                                <img src="{{ news_item.image.url }}" 
+                                     class="card-img-top" 
+                                     alt="{{ news_item.title }}"
+                                     style="height: 200px; object-fit: cover; transition: transform 0.3s ease;">
+                            </a>
+                            {% endif %}
+                            <div class="card-body p-4">
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill">
+                                        {{ news_item.category.name }}
+                                    </span>
+                                    <span class="text-muted small ms-3">
+                                        <i class="far fa-calendar-alt me-1"></i> {{ news_item.publish|date:"M d, Y" }}
+                                    </span>
+                                </div>
+                                
+                                <h3 class="card-title h5 fw-bold mb-3">
+                                    <a href="{{ news_item.get_absolute_url }}" class="text-dark text-decoration-none">
+                                        {{ news_item.title }}
+                                    </a>
+                                </h3>
+                                
+                                <p class="card-text text-secondary mb-3">
+                                    {{ news_item.body|truncatewords:20|striptags }}
+                                </p>
+                                
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <a href="{{ news_item.get_absolute_url }}" class="btn btn-primary btn-sm rounded-pill px-4">
+                                        Read More <i class="fas fa-arrow-right ms-1"></i>
+                                    </a>
+                                    <span class="text-muted small">
+                                        <i class="far fa-eye me-1"></i> {{ news_item.views|default:"0" }}
+                                    </span>
+                                </div>
+                            </div>
+                        </article>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <!-- Pagination -->
+                {% if news.has_other_pages %}
+                <nav class="mt-5">
+                    <ul class="pagination justify-content-center gap-2">
+                        {% if news.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link rounded-pill px-4" href="?page={{ news.previous_page_number }}">
+                                <i class="fas fa-chevron-left me-1"></i> Previous
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for num in news.paginator.page_range %}
+                            {% if news.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link rounded-pill px-3">{{ num }}</span>
+                            </li>
+                            {% elif num > news.number|add:'-3' and num < news.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link rounded-pill px-3" href="?page={{ num }}">{{ num }}</a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if news.has_next %}
+                        <li class="page-item">
+                            <a class="page-link rounded-pill px-4" href="?page={{ news.next_page_number }}">
+                                Next <i class="fas fa-chevron-right ms-1"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+                
+            {% else %}
+                <!-- No Results -->
+                <div class="text-center py-5">
+                    <i class="fas fa-tag fa-4x text-muted mb-4"></i>
+                    <h3 class="fw-bold mb-3">No articles found with this tag</h3>
+                    <p class="text-muted mb-4">
+                        We couldn't find any articles tagged with "{{ tag.name }}".
+                    </p>
+                    <a href="{% url 'news:news_list' %}" class="btn btn-primary rounded-pill px-4">
+                        <i class="fas fa-home me-2"></i>Back to Home
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Categories Widget -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h5 class="fw-bold mb-0">
+                        <i class="fas fa-th-large me-2 text-primary"></i>
+                        Categories
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% for cat in categories %}
+                        <a href="{% url 'news:news_list_by_category' cat.slug %}" 
+                           class="list-group-item list-group-item-action d-flex justify-content-between align-items-center px-4 py-3 border-0 hover-bg-light">
+                            <span>
+                                <i class="fas fa-folder-open me-2 text-warning opacity-75"></i>
+                                {{ cat.name }}
+                            </span>
+                            <span class="badge bg-primary rounded-pill">{{ cat.news_count }}</span>
+                        </a>
+                        {% empty %}
+                        <div class="px-4 py-3 text-muted">No categories</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Related Tags Widget -->
+            {% if related_tags %}
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h5 class="fw-bold mb-0">
+                        <i class="fas fa-tags me-2 text-primary"></i>
+                        Related Tags
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for related_tag in related_tags %}
+                        <a href="{% url 'news:news_by_tag' related_tag.slug %}" 
+                           class="badge bg-light text-dark text-decoration-none px-3 py-2 rounded-pill hover-bg-primary">
+                            #{{ related_tag.name }}
+                            <span class="badge bg-primary bg-opacity-50 ms-1">{{ related_tag.count }}</span>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px -8px rgba(0,0,0,0.15) !important;
+    }
+    
+    .hover-bg-light:hover {
+        background-color: #f8f9fa !important;
+    }
+    
+    .hover-bg-primary:hover {
+        background-color: #0d6efd !important;
+        color: white !important;
+    }
+    
+    .page-link {
+        border: none;
+        color: #495057;
+        background-color: #f8f9fa;
+        transition: all 0.2s ease;
+    }
+    
+    .page-link:hover {
+        background-color: #e9ecef;
+        color: #0d6efd;
+        transform: translateY(-2px);
+    }
+    
+    .page-item.active .page-link {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    @media (max-width: 768px) {
+        .display-5 {
+            font-size: 1.8rem;
+        }
+        
+        .tag-header {
+            text-align: center;
+        }
+        
+        .tag-header .d-flex {
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}

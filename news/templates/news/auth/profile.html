@@ -1,0 +1,172 @@
+{% extends "news/base.html" %}
+{% load static %}
+
+{% block title %}My Profile - Bangladesh Kantho{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-lg-3 mb-4">
+            <div class="card border-0 shadow-sm rounded-4 sticky-sidebar">
+                <div class="card-body text-center p-4">
+                    {% if user.profile_picture %}
+                        <img src="{{ user.profile_picture.url }}" alt="{{ user.username }}" 
+                             class="rounded-circle img-fluid mb-3" style="width: 120px; height: 120px; object-fit: cover;">
+                    {% else %}
+                        <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center mx-auto mb-3" 
+                             style="width: 120px; height: 120px;">
+                            <i class="fas fa-user fa-4x text-primary"></i>
+                        </div>
+                    {% endif %}
+                    
+                    <h5 class="fw-bold mb-1">{{ user.get_full_name }}</h5>
+                    <p class="text-muted small">@{{ user.username }}</p>
+                    <p class="text-muted small mb-3">{{ user.email }}</p>
+                    
+                    <hr>
+                    
+                    <div class="text-start">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Member since:</span>
+                            <span class="fw-semibold">{{ user.date_joined|date:"M Y" }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">News published:</span>
+                            <span class="fw-semibold">{{ user_news.count }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="col-lg-9">
+            <!-- Profile Edit Form -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h5 class="fw-bold mb-0">
+                        <i class="fas fa-user-edit me-2 text-primary"></i>Edit Profile
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="id_first_name" class="form-label">First Name</label>
+                                <input type="text" name="first_name" id="id_first_name" 
+                                       class="form-control" value="{{ form.first_name.value|default:'' }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="id_last_name" class="form-label">Last Name</label>
+                                <input type="text" name="last_name" id="id_last_name" 
+                                       class="form-control" value="{{ form.last_name.value|default:'' }}">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_username" class="form-label">Username</label>
+                            <input type="text" name="username" id="id_username" 
+                                   class="form-control" value="{{ form.username.value|default:'' }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_email" class="form-label">Email</label>
+                            <input type="email" name="email" id="id_email" 
+                                   class="form-control" value="{{ form.email.value|default:'' }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_phone" class="form-label">Phone</label>
+                            <input type="text" name="phone" id="id_phone" 
+                                   class="form-control" value="{{ form.phone.value|default:'' }}">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_bio" class="form-label">Bio</label>
+                            <textarea name="bio" id="id_bio" class="form-control" rows="3">{{ form.bio.value|default:'' }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_profile_picture" class="form-label">Profile Picture</label>
+                            <input type="file" name="profile_picture" id="id_profile_picture" class="form-control">
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary rounded-pill px-4">
+                            <i class="fas fa-save me-2"></i>Update Profile
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- User's News -->
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0">
+                        <i class="fas fa-newspaper me-2 text-primary"></i>My News Articles
+                    </h5>
+                    <a href="{% url 'news:create_news' %}" class="btn btn-sm btn-primary rounded-pill">
+                        <i class="fas fa-plus me-1"></i>Write News
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    {% if user_news %}
+                        <div class="list-group list-group-flush">
+                            {% for news in user_news|slice:":5" %}
+                            <div class="list-group-item px-4 py-3 border-0">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1 fw-semibold">
+                                            <a href="{{ news.get_absolute_url }}" class="text-decoration-none text-dark">
+                                                {{ news.title }}
+                                            </a>
+                                        </h6>
+                                        <small class="text-muted">
+                                            {{ news.publish|date:"M d, Y" }} • 
+                                            {% if news.status == 'published' %}
+                                                <span class="text-success">Published</span>
+                                            {% else %}
+                                                <span class="text-warning">Draft</span>
+                                            {% endif %}
+                                            • {{ news.views }} views
+                                        </small>
+                                    </div>
+                                    <div>
+                                        <a href="{% url 'news:edit_news' news.id %}" class="btn btn-sm btn-outline-primary me-2">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'news:delete_news' news.id %}" class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% if user_news.count > 5 %}
+                        <div class="card-footer bg-white border-0 text-center py-3">
+                            <a href="{% url 'news:my_news' %}" class="text-decoration-none">View all {{ user_news.count }} articles →</a>
+                        </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-newspaper fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">You haven't written any news articles yet.</p>
+                            <a href="{% url 'news:create_news' %}" class="btn btn-primary rounded-pill">Write Your First Article</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .sticky-sidebar {
+        position: sticky;
+        top: 100px;
+    }
+</style>
+{% endblock %}

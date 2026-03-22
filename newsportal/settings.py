@@ -26,8 +26,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'ckeditor',  # Required
-    'ckeditor_uploader',  # Optional - for image upload support
+    'ckeditor',
+    'ckeditor_uploader',
     'taggit',
 
 
@@ -115,6 +115,18 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+
+# Login/Logout URLs
+LOGIN_URL = 'news.login'
+LOGIN_REDIRECT_URL = 'dashboard'
+LOGOUT_REDIRECT_URL = 'news.news_list'
+
+
+AUTH_USER_MODEL = 'news.User'
+
+# Email settings (for password reset)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # For development
+# For production, use SMTP settings
 # CKEditor upload path
 CKEDITOR_UPLOAD_PATH = "uploads/"
 

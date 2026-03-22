@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.core.mail import send_mail
-from django.db.models import Q, Count, Prefetch
+from django.db.models import Q, Count, Prefetch, F
 from django.contrib import messages
 from django.utils import timezone
 from django.http import JsonResponse, Http404
@@ -12,20 +12,251 @@ from django.core.cache import cache
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from taggit.models import Tag
-from .models import News, Category, Comment, NewsView, NewsBookmark
+from .models import User, News, Category, Comment, NewsView, NewsBookmark
 from .forms import EmailNewsForm, CommentForm, NewsSearchForm
-import logging
 from datetime import timedelta
+from django.db import models
+from django.contrib.auth import login, authenticate, logout
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.urls import reverse
+from django.core.paginator import Paginator
+from .forms import (
+    UserRegistrationForm, UserLoginForm, UserProfileForm, 
+    NewsForm, CommentForm
+)
+import logging
+
 
 logger = logging.getLogger(__name__)
 
+
+def register(request):
+    """User registration view"""
+    if request.user.is_authenticated:
+        return redirect('news:dashboard')
+    
+    if request.method == 'POST':
+        form = UserRegistrationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            messages.success(request, f'Welcome {user.username}! Your account has been created successfully.')
+            return redirect('news:dashboard')
+        else:
+            for error in form.errors.values():
+                messages.error(request, error)
+    else:
+        form = UserRegistrationForm()
+    
+    return render(request, 'news/auth/register.html', {'form': form})
+
+
+def user_login(request):
+    """User login view"""
+    if request.user.is_authenticated:
+        return redirect('news:dashboard')
+    
+    if request.method == 'POST':
+        form = UserLoginForm(request, data=request.POST)
+        if form.is_valid():
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+            user = authenticate(request, username=username, password=password)
+            if user is not None:
+                login(request, user)
+                messages.success(request, f'Welcome back {user.username}!')
+                
+                # Redirect to next parameter if exists
+                next_url = request.GET.get('next')
+                if next_url:
+                    return redirect(next_url)
+                return redirect('news:dashboard')
+        else:
+            messages.error(request, 'Invalid username or password.')
+    else:
+        form = UserLoginForm()
+    
+    return render(request, 'news/auth/login.html', {'form': form})
+
+
+def user_logout(request):
+    """User logout view"""
+    logout(request)
+    messages.info(request, 'You have been logged out successfully.')
+    return redirect('news:news_list')
+
+
+@login_required
+def profile(request):
+    """User profile view"""
+    user = request.user
+    
+    if request.method == 'POST':
+        form = UserProfileForm(request.POST, request.FILES, instance=user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Profile updated successfully!')
+            return redirect('news:profile')
+    else:
+        form = UserProfileForm(instance=user)
+    
+    # Get user's news posts
+    user_news = News.objects.filter(author=user).order_by('-publish')
+    
+    # Get user's comments
+    user_comments = Comment.objects.filter(email=user.email).order_by('-created')
+    
+    context = {
+        'form': form,
+        'user_news': user_news,
+        'user_comments': user_comments,
+    }
+    return render(request, 'news/auth/profile.html', context)
+
+
+@login_required
+def create_news(request):
+    """Create new news article"""
+    if not request.user.is_authenticated:
+        messages.error(request, 'You need to login to create news.')
+        return redirect('news:login')
+    
+    if request.method == 'POST':
+        form = NewsForm(request.POST, request.FILES)
+        if form.is_valid():
+            news = form.save(commit=False)
+            news.author = request.user
+            news.save()
+            form.save_m2m()  # Save tags
+            
+            messages.success(request, 'News article created successfully!')
+            return redirect('news:news_detail', slug=news.slug)
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = NewsForm()
+    
+    categories = Category.objects.all()
+    return render(request, 'news/auth/create_news.html', {
+        'form': form,
+        'categories': categories,
+    })
+
+
+@login_required
+def edit_news(request, news_id):
+    """Edit existing news article"""
+    news = get_object_or_404(News, id=news_id)
+    
+    # Check permissions
+    if news.author != request.user and not request.user.is_superuser:
+        messages.error(request, 'You don\'t have permission to edit this news.')
+        return redirect('news:news_detail', slug=news.slug)
+    
+    if request.method == 'POST':
+        form = NewsForm(request.POST, request.FILES, instance=news)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'News article updated successfully!')
+            return redirect('news:news_detail', slug=news.slug)
+    else:
+        form = NewsForm(instance=news)
+    
+    categories = Category.objects.all()
+    return render(request, 'news/auth/edit_news.html', {
+        'form': form,
+        'news': news,
+        'categories': categories,
+    })
+
+
+@login_required
+def delete_news(request, news_id):
+    """Delete news article"""
+    news = get_object_or_404(News, id=news_id)
+    
+    # Check permissions
+    if news.author != request.user and not request.user.is_superuser:
+        messages.error(request, 'You don\'t have permission to delete this news.')
+        return redirect('news:news_detail', slug=news.slug)
+    
+    if request.method == 'POST':
+        news.delete()
+        messages.success(request, 'News article deleted successfully!')
+        return redirect('news:dashboard')
+    
+    return render(request, 'news/auth/delete_news.html', {'news': news})
+
+
+@login_required
+def my_news(request):
+    """View user's own news articles"""
+    user_news = News.objects.filter(author=request.user).order_by('-publish')
+    
+    paginator = Paginator(user_news, 10)
+    page = request.GET.get('page')
+    news_list = paginator.get_page(page)
+    
+    return render(request, 'news/auth/my_news.html', {
+        'news_list': news_list,
+        'total_count': user_news.count(),
+        'published_count': user_news.filter(status='published').count(),
+        'draft_count': user_news.filter(status='draft').count(),
+    })
+
+
+# Helper function to check if user can manage news
+def can_manage_news(user):
+    return user.is_authenticated and (user.is_author or user.is_superuser)
+
+@login_required
+@user_passes_test(can_manage_news)
+def dashboard(request):
+    """Admin/Author dashboard"""
+    from django.db.models import Count, Q
+    
+    # Statistics
+    total_news = News.objects.count()
+    published_news = News.objects.filter(status='published').count()
+    draft_news = News.objects.filter(status='draft').count()
+    total_comments = Comment.objects.count()
+    pending_comments = Comment.objects.filter(is_approved=False, active=True).count()
+    
+    # Recent news
+    recent_news = News.objects.select_related('category').order_by('-publish')[:10]
+    
+    # Recent comments
+    recent_comments = Comment.objects.select_related('news').order_by('-created')[:10]
+    
+    # Category stats with percentages
+    category_stats = Category.objects.annotate(
+        news_count=Count('news', filter=Q(news__status='published'))
+    ).filter(news_count__gt=0).order_by('-news_count')[:5]
+    
+    # Calculate percentages
+    total_published = published_news if published_news > 0 else 1
+    for cat in category_stats:
+        cat.percentage = (cat.news_count / total_published) * 100
+    
+    context = {
+        'total_news': total_news,
+        'published_news': published_news,
+        'draft_news': draft_news,
+        'total_comments': total_comments,
+        'pending_comments': pending_comments,
+        'recent_news': recent_news,
+        'recent_comments': recent_comments,
+        'category_stats': category_stats,
+    }
+    
+    return render(request, 'news/auth/dashboard.html', context)
 
 def news_list(request, category_slug=None):
     """
     Enhanced news listing view with filtering, caching, and optimized queries
     """
     category = None
-    categories = Category.objects.all()
+    categories = Category.objects.all().order_by("created_at")
     
     # Get base queryset with optimizations
     news_queryset = News.objects.select_related(
@@ -122,73 +353,34 @@ def news_list(request, category_slug=None):
 @cache_page(60 * 15)  # Cache for 15 minutes
 @vary_on_headers('User-Agent')
 def news_detail(request, slug):
-    """
-    Enhanced news detail view with proper comment display
-    """
-    # Get news with optimized queries
-    news = get_object_or_404(
-        News.objects.select_related('author', 'category'),
-        slug=slug,
-        status=News.Status.PUBLISHED,
-        publish__lte=timezone.now()
-    )
+    # Get the news
+    news = get_object_or_404(News, status=News.Status.PUBLISHED, slug=slug)
+    categories = Category.objects.all()
     
-    # Increment views
-    news.increment_views(request)
+    # CORRECT WAY - Update using F and refresh
+    from django.db.models import F
+    News.objects.filter(id=news.id).update(views=F('views') + 1)
+    news.refresh_from_db()  # This is important - reloads the updated value
     
-    # Get comments - only show approved and active comments
-    # Also include comments pending approval for the commenter (optional)
-    comments = news.comments.filter(
-        active=True,
-        is_approved=True
-    ).select_related('parent').order_by('-created')
+    news.views += 1
+    news.save(update_fields=['views'])
     
-    # Optional: Show pending comments to the commenter based on session
-    # This allows users to see their own pending comments
-    if not request.user.is_authenticated:
-        # For anonymous users, show their recent pending comment
-        recent_comment = Comment.objects.filter(
-            news=news,
-            ip_address=request.META.get('REMOTE_ADDR'),
-            active=False,
-            is_approved=False,
-            created__gte=timezone.now() - timezone.timedelta(minutes=30)
-        ).first()
-        if recent_comment:
-            comments = comments | Comment.objects.filter(id=recent_comment.id)
+    comments = news.comments.filter(active=True)
+    form = CommentForm()
     
-    # Get categories for sidebar
-    categories = Category.objects.annotate(
-        news_count=Count('news', filter=Q(news__status=News.Status.PUBLISHED))
-    ).filter(news_count__gt=0)[:8]
-    
-    # Get similar news
     similar_news = News.objects.filter(
         category=news.category,
         status=News.Status.PUBLISHED
     ).exclude(id=news.id)[:4]
     
-    # Get popular news
-    popular_news = News.objects.filter(
-        status=News.Status.PUBLISHED
-    ).annotate(
-        view_count=Count('view_records')
-    ).order_by('-view_count')[:5]
-    
-    # Initialize comment form
-    form = CommentForm()
-    
-    context = {
+    return render(request, 'news/news/detail.html', {
         'news': news,
         'comments': comments,
         'form': form,
         'categories': categories,
-        'similar_news': similar_news,
-        'popular_news': popular_news,
-        'comment_count': comments.count(),
-    }
-    
-    return render(request, 'news/news/detail.html', context)
+        'similar_news': similar_news
+    })
+
 
 
 def news_share(request, news_id):
@@ -559,17 +751,33 @@ def news_bookmark(request, news_id):
 
 def news_by_tag(request, tag_slug):
     """
-    Display news filtered by tag
+    Display news filtered by tag - Alternative method
     """
+    # Get the tag
     tag = get_object_or_404(Tag, slug=tag_slug)
     
+    # Method 2: Using TaggedItem to get related objects
+    from taggit.models import TaggedItem
+    from django.contrib.contenttypes.models import ContentType
+    
+    # Get content type for News model
+    news_content_type = ContentType.objects.get_for_model(News)
+    
+    # Get all tagged items for this tag and News model
+    tagged_items = TaggedItem.objects.filter(
+        tag=tag,
+        content_type=news_content_type
+    ).values_list('object_id', flat=True)
+    
+    # Get the actual news objects
     news_list = News.objects.filter(
-        tags__slug=tag_slug,
+        id__in=tagged_items,
         status=News.Status.PUBLISHED,
         publish__lte=timezone.now()
     ).select_related('author', 'category').order_by('-publish')
     
-    paginator = Paginator(news_list, 9)
+    # Pagination
+    paginator = Paginator(news_list, 12)
     page_number = request.GET.get('page', 1)
     
     try:
@@ -579,17 +787,15 @@ def news_by_tag(request, tag_slug):
     except EmptyPage:
         news = paginator.page(paginator.num_pages)
     
-    # Get related tags
-    related_tags = Tag.objects.filter(
-        taggit_taggeditem_items__content_object__in=news_list
-    ).annotate(
-        count=Count('taggit_taggeditem_items')
-    ).order_by('-count')[:10]
+    # Get categories for sidebar
+    categories = Category.objects.annotate(
+        news_count=Count('news', filter=Q(news__status=News.Status.PUBLISHED))
+    ).filter(news_count__gt=0)[:8]
     
     context = {
         'tag': tag,
         'news': news,
-        'related_tags': related_tags,
+        'categories': categories,
         'is_paginated': paginator.num_pages > 1,
         'page_obj': news,
         'paginator': paginator,

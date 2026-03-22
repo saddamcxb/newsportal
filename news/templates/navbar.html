@@ -11,7 +11,7 @@
         <!-- Brand Logo -->
         <a class="navbar-brand mx-auto mx-lg-0" href="{% url 'news:news_list' %}">
             <img src="{% static 'images/logo.jpg' %}" alt="Nabakal News" height="40" class="d-inline-block align-top">
-            <span class="brand-text d-none d-sm-inline">নবকাল নিউজ</span>
+            <span class="brand-text d-none d-sm-inline">Nobokal News</span>
         </a>
         
         <!-- Desktop Search Trigger & User Actions -->
@@ -19,43 +19,54 @@
             <!-- Desktop Search Toggle Button -->
             <button class="search-trigger-btn d-none d-lg-flex" id="searchTriggerBtn" type="button">
                 <i class="fas fa-search"></i>
-                <span class="ms-2">Search</span>
+                <span class="ms-4">Search</span>
             </button>
             
-            <!-- User Actions -->
+            <!-- User Menu -->
+            {% if user.is_authenticated %}
             <div class="dropdown">
                 <button class="user-menu-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="fas fa-user-circle"></i>
+                    <span class="user-name d-none d-md-inline">{{ user.username|truncatechars:12 }}</span>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3 mt-2">
-                    {% if user.is_authenticated %}
-                    <li><a class="dropdown-item" href="#">
+                    <li><a class="dropdown-item" href="{% url 'news:profile' %}">
                         <i class="fas fa-user me-2"></i> Profile
                     </a></li>
-                    <li><a class="dropdown-item" href="#">
-                        <i class="fas fa-bookmark me-2"></i> Saved
+                    <li><a class="dropdown-item" href="{% url 'news:dashboard' %}">
+                        <i class="fas fa-chart-line me-2"></i> Dashboard
+                    </a></li>
+                    <li><a class="dropdown-item" href="{% url 'news:my_news' %}">
+                        <i class="fas fa-newspaper me-2"></i> My News
+                    </a></li>
+                    <li><a class="dropdown-item" href="{% url 'news:create_news' %}">
+                        <i class="fas fa-pen-fancy me-2"></i> Write News
                     </a></li>
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item text-danger" href="#">
+                    <li><a class="dropdown-item text-danger" href="{% url 'news:logout' %}">
                         <i class="fas fa-sign-out-alt me-2"></i> Logout
                     </a></li>
-                    {% else %}
-                    <li><a class="dropdown-item" href="#">
-                        <i class="fas fa-sign-in-alt me-2"></i> Login
-                    </a></li>
-                    <li><a class="dropdown-item" href="#">
-                        <i class="fas fa-user-plus me-2"></i> Register
-                    </a></li>
-                    {% endif %}
                 </ul>
             </div>
+            {% else %}
+            <a href="{% url 'news:login' %}" class="btn-login">
+                <i class="fas fa-sign-in-alt"></i>
+                <span>Login</span>
+            </a>
+            <a href="{% url 'news:register' %}" class="btn-register">
+                <i class="fas fa-user-plus"></i>
+                <span>Register</span>
+            </a>
+            {% endif %}
         </div>
         
         <!-- Navigation Links -->
         <div class="collapse navbar-collapse" id="navbarMain">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'news:news_list' %}">Home</a>
+                    <a class="nav-link" href="{% url 'news:news_list' %}">
+                        <i class="fas fa-home me-1 d-lg-none"></i> Home
+                    </a>
                 </li>
                 {% for category in categories|slice:":6" %}
                 <li class="nav-item">
@@ -154,78 +165,182 @@
 
 <!-- Styles -->
 <style>
-    /* Navbar Styling */
     #mainNavbar {
-        background: #ffffff;
-        box-shadow: 0 2px 15px rgba(0,0,0,0.08);
-        padding: 0.75rem 0;
+        background: #1a2a2f;
+        box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+        padding: 0.5rem 0;
         transition: all 0.3s ease;
     }
     
     #mainNavbar .navbar-brand {
         font-weight: 700;
-        font-size: 1.4rem;
-        color: #c0392b;
+        font-size: 1.3rem;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    #mainNavbar .navbar-brand img {
+        border-radius: 8px;
     }
     
     #mainNavbar .brand-text {
-        background: linear-gradient(135deg, #c0392b, #e74c3c);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        font-weight: 700;
-        margin-left: 8px;
+        color: #0917b0;
+        font-weight: 600;
+        letter-spacing: 0.5px;
     }
     
+    /* Navbar Toggler */
+    .navbar-toggler {
+        background: rgba(255,255,255,0.1);
+        padding: 8px 12px;
+        border-radius: 8px;
+    }
+    
+    .navbar-toggler:focus {
+        box-shadow: none;
+        outline: none;
+    }
+    
+    .navbar-toggler-icon {
+        filter: brightness(0) invert(1);
+    }
+    
+    /* Navigation Links */
     #mainNavbar .nav-link {
-        color: #2c3e50;
+        color: rgba(255,255,255,0.85);
         font-weight: 500;
         font-size: 0.95rem;
         padding: 0.5rem 1rem;
-        transition: color 0.2s;
+        transition: all 0.2s ease;
+        border-radius: 8px;
+        margin: 0 2px;
     }
     
     #mainNavbar .nav-link:hover,
     #mainNavbar .nav-link.active {
-        color: #c0392b;
+        color: #fff;
+        background: rgba(255,255,255,0.1);
     }
     
-    /* Search Trigger Button */
-    .search-trigger-btn {
-        background: #f8f9fa;
-        border: 1px solid #e9ecef;
+    /* Login/Register Buttons */
+    .btn-login,
+    .btn-register {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0.5rem 1rem;
         border-radius: 30px;
-        padding: 0.5rem 1.2rem;
         font-size: 0.9rem;
-        color: #6c757d;
-        transition: all 0.2s;
-        cursor: pointer;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s ease;
     }
     
-    .search-trigger-btn:hover {
-        background: #e9ecef;
-        border-color: #c0392b;
-        color: #c0392b;
+    .btn-login {
+        background: rgba(6, 45, 17, 0.165);
+        color: white;
+        border: 1px solid rgba(255,255,255,0.2);
     }
     
-    .search-trigger-btn i {
-        font-size: 0.9rem;
+    .btn-login:hover {
+        background: rgba(6, 78, 37, 0.329);
+        color: white;
+    }
+    
+    .btn-register {
+        background: #e74c3c;
+        color: white;
+    }
+    
+    .btn-register:hover {
+        background: #c0392b;
+        color: white;
     }
     
     /* User Menu Button */
     .user-menu-btn {
-        background: transparent;
-        border: none;
-        font-size: 1.4rem;
-        color: #495057;
-        padding: 0.4rem 0.6rem;
-        border-radius: 50%;
-        transition: background 0.2s;
+        background: rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 30px;
+        padding: 0.5rem 1rem;
+        color: white;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
     }
     
     .user-menu-btn:hover {
+        background: rgba(255,255,255,0.2);
+    }
+    
+    .user-menu-btn i {
+        font-size: 1.1rem;
+    }
+    
+    .user-name {
+        max-width: 100px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
+    /* Dropdown Menu */
+    .dropdown-menu {
+        background: #fff;
+        border: none;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        border-radius: 12px;
+        padding: 0.5rem 0;
+        margin-top: 8px;
+    }
+    
+    .dropdown-item {
+        padding: 0.6rem 1.5rem;
+        color: #2c3e50;
+        transition: all 0.2s ease;
+    }
+    
+    .dropdown-item:hover {
         background: #f8f9fa;
-        color: #c0392b;
+        color: #e74c3c;
+    }
+    
+    .dropdown-item i {
+        width: 20px;
+        margin-right: 8px;
+        color: #6c757d;
+    }
+    
+    .dropdown-item:hover i {
+        color: #e74c3c;
+    }
+    
+    .dropdown-divider {
+        margin: 0.3rem 0;
+    }
+    
+    /* Search Trigger Button */
+    .search-trigger-btn {
+        background: rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 30px;
+        padding: 0.5rem 1.2rem;
+        font-size: 0.9rem;
+        color: white;
+        transition: all 0.2s;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .search-trigger-btn:hover {
+        background: rgba(255,255,255,0.2);
+        border-color: rgba(255,255,255,0.3);
     }
     
     /* Full-Screen Search Overlay */
@@ -304,8 +419,8 @@
     }
     
     .search-input-wrapper:focus-within {
-        border-color: #c0392b;
-        box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.1);
+        border-color: #e74c3c;
+        box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
     }
     
     .search-icon {
@@ -334,11 +449,11 @@
     
     .clear-search-overlay:hover,
     .voice-search-overlay:hover {
-        color: #c0392b;
+        color: #e74c3c;
     }
     
     .voice-search-overlay.recording {
-        color: #c0392b;
+        color: #e74c3c;
         animation: pulseMic 1s infinite;
     }
     
@@ -378,7 +493,7 @@
     
     .suggestion-item:hover {
         background: #e9ecef;
-        color: #c0392b;
+        color: #e74c3c;
     }
     
     /* Search Results Preview */
@@ -401,7 +516,7 @@
     }
     
     .view-all-link {
-        color: #c0392b;
+        color: #e74c3c;
         text-decoration: none;
         font-size: 0.9rem;
         font-weight: 500;
@@ -476,6 +591,7 @@
         padding: 12px 0;
         z-index: 1000;
         display: none;
+        transition: transform 0.3s ease;
     }
     
     .mobile-search-wrapper {
@@ -510,52 +626,7 @@
     }
     
     .mobile-voice-search.recording {
-        color: #c0392b;
-    }
-    
-    /* Responsive */
-    @media (max-width: 991.98px) {
-        .mobile-search-bar {
-            display: block;
-        }
-        
-        .search-trigger-btn {
-            display: none !important;
-        }
-        
-        #mainNavbar .navbar-collapse {
-            background: #ffffff;
-            padding: 20px 0;
-            border-top: 1px solid #e9ecef;
-            margin-top: 12px;
-        }
-        
-        .search-overlay-container {
-            padding: 40px 20px;
-        }
-        
-        .search-overlay-header h2 {
-            font-size: 1.6rem;
-        }
-        
-        .search-overlay-input {
-            font-size: 1rem;
-            padding: 14px 12px;
-        }
-    }
-    
-    @media (min-width: 992px) {
-        .mobile-search-bar {
-            display: none;
-        }
-        
-        .navbar-toggler {
-            display: none;
-        }
-        
-        .navbar-collapse {
-            display: flex !important;
-        }
+        color: #e74c3c;
     }
     
     /* Loading animation */
@@ -574,300 +645,529 @@
         from { transform: rotate(0deg); }
         to { transform: rotate(360deg); }
     }
+    
+    /* ========== RESPONSIVE STYLES ========== */
+    
+    /* Tablet and Mobile Devices */
+    @media (max-width: 991.98px) {
+        /* Show mobile search bar */
+        .mobile-search-bar {
+            display: block;
+        }
+        
+        /* Hide desktop search trigger */
+        .search-trigger-btn {
+            display: none !important;
+        }
+        
+        /* Collapsed navbar styling */
+        #mainNavbar .navbar-collapse {
+            background: #1a2a2f;
+            padding: 1rem 0;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            margin-top: 0.5rem;
+            border-radius: 12px;
+        }
+        
+        /* Navigation links in mobile */
+        #mainNavbar .nav-link {
+            padding: 0.75rem 1rem;
+            margin: 0.25rem 0;
+            border-radius: 8px;
+        }
+        
+        /* Hide user name on mobile */
+        .user-name {
+            display: none !important;
+        }
+        
+        /* Adjust user menu button for mobile */
+        .user-menu-btn {
+            padding: 0.4rem 0.8rem;
+        }
+        
+        .user-menu-btn span {
+            display: none;
+        }
+        
+        .user-menu-btn i {
+            margin: 0;
+        }
+        
+        /* Login/Register buttons on mobile */
+        .btn-login span,
+        .btn-register span {
+            display: none;
+        }
+        
+        .btn-login,
+        .btn-register {
+            padding: 0.4rem 0.8rem;
+        }
+        
+        .btn-login i,
+        .btn-register i {
+            margin: 0;
+        }
+        
+        /* Overlay adjustments */
+        .search-overlay-container {
+            padding: 40px 20px;
+        }
+        
+        .search-overlay-header h2 {
+            font-size: 1.6rem;
+        }
+        
+        .search-overlay-input {
+            font-size: 1rem;
+            padding: 14px 12px;
+        }
+        
+        /* Mobile search bar sticky adjustment */
+        .mobile-search-bar {
+            top: 65px;
+        }
+    }
+    
+    /* Desktop Devices */
+    @media (min-width: 992px) {
+        .mobile-search-bar {
+            display: none;
+        }
+        
+        .navbar-toggler {
+            display: none;
+        }
+        
+        .navbar-collapse {
+            display: flex !important;
+        }
+        
+        /* Desktop navbar centering */
+        #mainNavbar .navbar-collapse {
+            flex-grow: 1;
+        }
+        
+        #mainNavbar .navbar-nav {
+            margin-left: 2rem;
+        }
+    }
+    
+    /* Large Desktop Devices */
+    @media (min-width: 1200px) {
+        #mainNavbar .container-fluid {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+    }
+    
+    /* Small Mobile Devices */
+    @media (max-width: 480px) {
+        .navbar-brand img {
+            height: 32px;
+        }
+        
+        .navbar-brand .brand-text {
+            font-size: 1rem;
+        }
+        
+        .mobile-search-bar {
+            top: 60px;
+        }
+        
+        .mobile-search-wrapper {
+            padding: 6px 12px;
+        }
+        
+        .mobile-search-input {
+            font-size: 0.85rem;
+        }
+        
+        .search-overlay-header h2 {
+            font-size: 1.3rem;
+        }
+        
+        .search-overlay-header p {
+            font-size: 0.85rem;
+        }
+        
+        .suggestion-item {
+            font-size: 0.8rem;
+            padding: 6px 14px;
+        }
+        
+        .result-item {
+            flex-direction: column;
+        }
+        
+        .result-item-image {
+            width: 100%;
+            height: 120px;
+        }
+    }
+    
+    /* Active Link Highlight */
+    .nav-link.active {
+        background: rgba(170, 163, 162, 0.163) !important;
+        color: #6dd0108b !important;
+    }
+    
+    /* Scroll Effect */
+    #mainNavbar.scrolled {
+        padding: 0.3rem 0;
+        background: #15262b;
+    }
 </style>
+
 
 <!-- JavaScript -->
 <script>
-// Search Overlay Controller
-class SearchOverlay {
-    constructor() {
-        this.overlay = document.getElementById('searchOverlay');
-        this.searchInput = document.getElementById('overlaySearchInput');
-        this.mobileInput = document.getElementById('mobileSearchInput');
-        this.searchTrigger = document.getElementById('searchTriggerBtn');
-        this.closeBtn = document.getElementById('closeSearchBtn');
-        this.clearBtn = document.getElementById('clearOverlayBtn');
-        this.voiceBtn = document.getElementById('voiceOverlayBtn');
-        this.mobileVoiceBtn = document.getElementById('mobileVoiceBtn');
-        this.resultsPreview = document.getElementById('searchResultsPreview');
-        this.resultsGrid = document.getElementById('resultsGrid');
-        this.resultsCount = document.getElementById('resultsCount');
-        this.viewAllLink = document.getElementById('viewAllLink');
-        
-        this.searchTimeout = null;
-        this.recognition = null;
-        
-        this.init();
+// Navbar scroll effect
+window.addEventListener('scroll', function() {
+    const navbar = document.getElementById('mainNavbar');
+    if (navbar) {
+        if (window.scrollY > 50) {
+            navbar.classList.add('scrolled');
+        } else {
+            navbar.classList.remove('scrolled');
+        }
     }
+});
+
+// Complete Search Functionality
+(function() {
+    'use strict';
     
-    init() {
-        this.bindEvents();
-        this.initVoiceSearch();
-        this.loadTrendingSuggestions();
-    }
-    
-    bindEvents() {
-        // Open overlay
-        if (this.searchTrigger) {
-            this.searchTrigger.addEventListener('click', () => this.open());
-        }
-        
-        // Close overlay
-        if (this.closeBtn) {
-            this.closeBtn.addEventListener('click', () => this.close());
-        }
-        
-        // Close on escape key
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && this.overlay.classList.contains('active')) {
-                this.close();
-            }
-        });
-        
-        // Search input
-        if (this.searchInput) {
-            this.searchInput.addEventListener('input', (e) => {
-                const query = e.target.value.trim();
-                this.clearBtn.style.display = query ? 'block' : 'none';
-                this.debounceSearch(query);
-            });
-        }
-        
-        // Mobile search input
-        if (this.mobileInput) {
-            this.mobileInput.addEventListener('input', (e) => {
-                const query = e.target.value.trim();
-                this.debounceMobileSearch(query);
-            });
+    class SearchController {
+        constructor() {
+            // DOM Elements
+            this.searchOverlay = document.getElementById('searchOverlay');
+            this.searchTrigger = document.getElementById('searchTriggerBtn');
+            this.closeSearchBtn = document.getElementById('closeSearchBtn');
+            this.overlaySearchInput = document.getElementById('overlaySearchInput');
+            this.mobileSearchInput = document.getElementById('mobileSearchInput');
+            this.clearOverlayBtn = document.getElementById('clearOverlayBtn');
+            this.mobileVoiceBtn = document.getElementById('mobileVoiceBtn');
+            this.voiceOverlayBtn = document.getElementById('voiceOverlayBtn');
             
-            this.mobileInput.addEventListener('focus', () => {
-                this.open();
-                setTimeout(() => {
-                    if (this.searchInput) {
-                        this.searchInput.value = this.mobileInput.value;
-                        this.searchInput.focus();
+            // State
+            this.searchTimeout = null;
+            this.isOverlayOpen = false;
+            this.apiBaseUrl = '/api/';
+            
+            this.init();
+        }
+        
+        init() {
+            this.bindEvents();
+            this.setupKeyboardShortcuts();
+            this.loadTrendingSuggestions();
+            this.initVoiceSearch();
+            console.log('Search controller initialized');
+        }
+        
+        bindEvents() {
+            // Open search overlay
+            if (this.searchTrigger) {
+                this.searchTrigger.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.openSearchOverlay();
+                });
+            }
+            
+            // Close search overlay
+            if (this.closeSearchBtn) {
+                this.closeSearchBtn.addEventListener('click', () => {
+                    this.closeSearchOverlay();
+                });
+            }
+            
+            // Close overlay when clicking outside
+            if (this.searchOverlay) {
+                this.searchOverlay.addEventListener('click', (e) => {
+                    if (e.target === this.searchOverlay) {
+                        this.closeSearchOverlay();
                     }
-                }, 100);
-            });
+                });
+            }
+            
+            // Overlay search input
+            if (this.overlaySearchInput) {
+                this.overlaySearchInput.addEventListener('input', (e) => {
+                    const query = e.target.value.trim();
+                    this.toggleClearButton(query);
+                    
+                    if (query.length >= 2) {
+                        this.debounceFetchResults(query);
+                    } else {
+                        this.hideResultsPreview();
+                    }
+                });
+                
+                this.overlaySearchInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        this.performSearch(this.overlaySearchInput.value.trim());
+                    }
+                });
+            }
+            
+            // Clear button
+            if (this.clearOverlayBtn) {
+                this.clearOverlayBtn.addEventListener('click', () => {
+                    if (this.overlaySearchInput) {
+                        this.overlaySearchInput.value = '';
+                        this.overlaySearchInput.focus();
+                        this.toggleClearButton('');
+                        this.hideResultsPreview();
+                    }
+                });
+            }
+            
+            // Mobile search input
+            if (this.mobileSearchInput) {
+                this.mobileSearchInput.addEventListener('focus', () => {
+                    this.openSearchOverlay();
+                });
+            }
         }
         
-        // Clear button
-        if (this.clearBtn) {
-            this.clearBtn.addEventListener('click', () => {
-                this.searchInput.value = '';
-                this.clearBtn.style.display = 'none';
-                this.searchInput.focus();
-                this.resultsPreview.style.display = 'none';
-            });
+        debounceFetchResults(query) {
+            clearTimeout(this.searchTimeout);
+            this.searchTimeout = setTimeout(() => {
+                this.fetchInstantResults(query);
+            }, 300);
         }
         
-        // View all link
-        if (this.viewAllLink) {
-            this.viewAllLink.addEventListener('click', (e) => {
-                e.preventDefault();
-                const query = this.searchInput.value.trim();
-                if (query) {
-                    window.location.href = `/news/search/?query=${encodeURIComponent(query)}`;
+        async fetchInstantResults(query) {
+            if (!query || query.length < 2) return;
+            
+            const url = `${this.apiBaseUrl}instant-results/?q=${encodeURIComponent(query)}`;
+            
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+                
+                if (data.results && data.results.length > 0) {
+                    this.showResultsPreview(data.results, data.total);
+                } else {
+                    this.hideResultsPreview();
+                }
+            } catch (error) {
+                console.error('Error fetching results:', error);
+                this.hideResultsPreview();
+            }
+        }
+        
+        showResultsPreview(results, total) {
+            const resultsPreview = document.getElementById('searchResultsPreview');
+            const resultsGrid = document.getElementById('resultsGrid');
+            const resultsCount = document.getElementById('resultsCount');
+            const viewAllLink = document.getElementById('viewAllLink');
+            
+            if (!resultsPreview || !resultsGrid) return;
+            
+            if (results.length > 0) {
+                if (resultsCount) {
+                    resultsCount.textContent = `${total || results.length} results found`;
+                }
+                
+                resultsGrid.innerHTML = results.slice(0, 5).map(result => `
+                    <div class="result-item" onclick="window.location.href='${result.url}'">
+                        ${result.image ? `<img src="${result.image}" alt="${this.escapeHtml(result.title)}" class="result-item-image">` : ''}
+                        <div class="result-item-content">
+                            <div class="result-item-title">${this.escapeHtml(result.title)}</div>
+                            <div class="result-item-excerpt">${this.escapeHtml(result.excerpt)}</div>
+                            <div class="result-item-meta">
+                                <span>${this.escapeHtml(result.category)}</span>
+                                <span>•</span>
+                                <span>${result.date}</span>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                if (viewAllLink) {
+                    const query = this.overlaySearchInput ? this.overlaySearchInput.value.trim() : '';
+                    viewAllLink.href = `/search/?query=${encodeURIComponent(query)}`;
+                }
+                
+                resultsPreview.style.display = 'block';
+            } else {
+                resultsPreview.style.display = 'none';
+            }
+        }
+        
+        hideResultsPreview() {
+            const resultsPreview = document.getElementById('searchResultsPreview');
+            if (resultsPreview) resultsPreview.style.display = 'none';
+        }
+        
+        async loadTrendingSuggestions() {
+            try {
+                const response = await fetch(`${this.apiBaseUrl}trending/`);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+                
+                const suggestionsList = document.getElementById('trendingSuggestions');
+                if (suggestionsList && data.trending) {
+                    suggestionsList.innerHTML = data.trending.slice(0, 6).map(item => `
+                        <span class="suggestion-item" data-query="${this.escapeHtml(item.term)}">
+                            ${this.escapeHtml(item.term)}
+                        </span>
+                    `).join('');
+                    
+                    document.querySelectorAll('.suggestion-item').forEach(item => {
+                        item.addEventListener('click', () => {
+                            const query = item.dataset.query;
+                            if (this.overlaySearchInput) {
+                                this.overlaySearchInput.value = query;
+                                this.fetchInstantResults(query);
+                                this.toggleClearButton(query);
+                            }
+                        });
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading trending:', error);
+            }
+        }
+        
+        initVoiceSearch() {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                if (this.voiceOverlayBtn) this.voiceOverlayBtn.style.display = 'none';
+                if (this.mobileVoiceBtn) this.mobileVoiceBtn.style.display = 'none';
+                return;
+            }
+            
+            const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'bn-BD';
+            recognition.interimResults = false;
+            
+            const handleVoice = (btn, input) => {
+                btn.addEventListener('click', () => {
+                    recognition.start();
+                    btn.classList.add('recording');
+                });
+            };
+            
+            if (this.voiceOverlayBtn && this.overlaySearchInput) {
+                handleVoice(this.voiceOverlayBtn, this.overlaySearchInput);
+            }
+            
+            if (this.mobileVoiceBtn && this.mobileSearchInput) {
+                handleVoice(this.mobileVoiceBtn, this.mobileSearchInput);
+            }
+            
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                if (this.overlaySearchInput) {
+                    this.overlaySearchInput.value = transcript;
+                    this.fetchInstantResults(transcript);
+                }
+                if (this.mobileSearchInput) this.mobileSearchInput.value = transcript;
+                this.performSearch(transcript);
+                if (this.voiceOverlayBtn) this.voiceOverlayBtn.classList.remove('recording');
+                if (this.mobileVoiceBtn) this.mobileVoiceBtn.classList.remove('recording');
+            };
+            
+            recognition.onerror = () => {
+                if (this.voiceOverlayBtn) this.voiceOverlayBtn.classList.remove('recording');
+                if (this.mobileVoiceBtn) this.mobileVoiceBtn.classList.remove('recording');
+            };
+            
+            recognition.onend = () => {
+                if (this.voiceOverlayBtn) this.voiceOverlayBtn.classList.remove('recording');
+                if (this.mobileVoiceBtn) this.mobileVoiceBtn.classList.remove('recording');
+            };
+        }
+        
+        openSearchOverlay() {
+            if (!this.searchOverlay) return;
+            this.searchOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            this.isOverlayOpen = true;
+            
+            setTimeout(() => {
+                if (this.overlaySearchInput) {
+                    this.overlaySearchInput.focus();
+                    if (this.mobileSearchInput && this.mobileSearchInput.value) {
+                        this.overlaySearchInput.value = this.mobileSearchInput.value;
+                        this.toggleClearButton(this.mobileSearchInput.value);
+                    }
+                }
+            }, 100);
+        }
+        
+        closeSearchOverlay() {
+            if (!this.searchOverlay) return;
+            this.searchOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+            this.isOverlayOpen = false;
+            this.hideResultsPreview();
+        }
+        
+        toggleClearButton(value) {
+            if (this.clearOverlayBtn) {
+                this.clearOverlayBtn.style.display = value && value.length > 0 ? 'flex' : 'none';
+            }
+        }
+        
+        performSearch(query) {
+            if (!query || query.trim() === '') {
+                const input = this.overlaySearchInput || this.mobileSearchInput;
+                if (input) {
+                    input.placeholder = 'Please enter a search term!';
+                    input.style.borderColor = '#dc3545';
+                    setTimeout(() => {
+                        input.placeholder = 'Type to search...';
+                        input.style.borderColor = '';
+                    }, 2000);
+                }
+                return;
+            }
+            
+            const encodedQuery = encodeURIComponent(query.trim());
+            this.closeSearchOverlay();
+            setTimeout(() => {
+                window.location.href = `/search/?query=${encodedQuery}`;
+            }, 150);
+        }
+        
+        setupKeyboardShortcuts() {
+            document.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                    e.preventDefault();
+                    this.openSearchOverlay();
+                }
+                if (e.key === 'Escape' && this.isOverlayOpen) {
+                    this.closeSearchOverlay();
                 }
             });
         }
+        
+        escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
     }
     
-    open() {
-        this.overlay.classList.add('active');
-        document.body.style.overflow = 'hidden';
-        setTimeout(() => {
-            if (this.searchInput) this.searchInput.focus();
-        }, 100);
-    }
-    
-    close() {
-        this.overlay.classList.remove('active');
-        document.body.style.overflow = '';
-        if (this.resultsPreview) this.resultsPreview.style.display = 'none';
-    }
-    
-    debounceSearch(query) {
-        clearTimeout(this.searchTimeout);
-        this.searchTimeout = setTimeout(() => {
-            if (query.length >= 2) {
-                this.fetchResults(query);
-            } else {
-                this.resultsPreview.style.display = 'none';
+    document.addEventListener('DOMContentLoaded', () => {
+        window.searchController = new SearchController();
+        
+        // Highlight active nav link
+        const currentPath = window.location.pathname;
+        document.querySelectorAll('.nav-link').forEach(link => {
+            const href = link.getAttribute('href');
+            if (href && href !== '/' && currentPath.startsWith(href)) {
+                link.classList.add('active');
+            } else if (href === '/' && currentPath === '/') {
+                link.classList.add('active');
             }
-        }, 300);
-    }
-    
-    debounceMobileSearch(query) {
-        clearTimeout(this.searchTimeout);
-        this.searchTimeout = setTimeout(() => {
-            if (query.length >= 2 && this.searchInput) {
-                this.searchInput.value = query;
-                this.fetchResults(query);
-            }
-        }, 300);
-    }
-    
-    async fetchResults(query) {
-    this.resultsPreview.style.display = 'block';
-    this.resultsGrid.innerHTML = '<div class="search-loading"><i class="fas fa-spinner fa-spin"></i><p>Searching...</p></div>';
-    
-    try {
-        const response = await fetch(`/news/api/instant-results/?q=${encodeURIComponent(query)}`);
-        
-        // Check if response is OK
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        // Check content type
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-            throw new Error('Response is not JSON');
-        }
-        
-        const data = await response.json();
-        
-        if (data.results && data.results.length > 0) {
-            this.displayResults(data.results, data.total);
-        } else {
-            this.resultsGrid.innerHTML = `
-                <div class="search-loading">
-                    <i class="fas fa-search fa-2x"></i>
-                    <p>No results found for "${escapeHtml(query)}"</p>
-                    <small>Try different keywords or check your spelling</small>
-                </div>
-            `;
-        }
-    } catch (error) {
-        console.error('Search error:', error);
-        this.resultsGrid.innerHTML = `
-            <div class="search-loading">
-                <i class="fas fa-exclamation-triangle"></i>
-                <p>Unable to search. Please try again later.</p>
-                <small>${error.message}</small>
-            </div>
-        `;
-    }
-}
-    displayResults(results, total) {
-        this.resultsCount.textContent = `${total} results found`;
-        
-        this.resultsGrid.innerHTML = results.slice(0, 5).map(result => `
-            <div class="result-item" onclick="window.location.href='${result.url}'">
-                ${result.image ? `<img src="${result.image}" alt="${escapeHtml(result.title)}" class="result-item-image">` : ''}
-                <div class="result-item-content">
-                    <div class="result-item-title">${escapeHtml(result.title)}</div>
-                    <div class="result-item-excerpt">${escapeHtml(result.excerpt)}</div>
-                    <div class="result-item-meta">
-                        <span>${escapeHtml(result.category)}</span>
-                        <span>•</span>
-                        <span>${result.date}</span>
-                    </div>
-                </div>
-            </div>
-        `).join('');
-        
-        this.viewAllLink.href = `/news/search/?query=${encodeURIComponent(this.searchInput.value)}`;
-    }
-    
-    initVoiceSearch() {
-        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-            if (this.voiceBtn) this.voiceBtn.style.display = 'none';
-            if (this.mobileVoiceBtn) this.mobileVoiceBtn.style.display = 'none';
-            return;
-        }
-        
-        const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
-        this.recognition = new SpeechRecognition();
-        this.recognition.lang = 'bn-BD';
-        this.recognition.interimResults = false;
-        
-        const handleVoice = (btn, input) => {
-            btn.addEventListener('click', () => {
-                this.recognition.start();
-                btn.classList.add('recording');
-            });
-        };
-        
-        if (this.voiceBtn && this.searchInput) {
-            handleVoice(this.voiceBtn, this.searchInput);
-        }
-        
-        if (this.mobileVoiceBtn && this.mobileInput) {
-            handleVoice(this.mobileVoiceBtn, this.mobileInput);
-        }
-        
-        this.recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript;
-            if (this.searchInput) this.searchInput.value = transcript;
-            if (this.mobileInput) this.mobileInput.value = transcript;
-            this.fetchResults(transcript);
-            this.voiceBtn.classList.remove('recording');
-            if (this.mobileVoiceBtn) this.mobileVoiceBtn.classList.remove('recording');
-        };
-        
-        this.recognition.onerror = () => {
-            if (this.voiceBtn) this.voiceBtn.classList.remove('recording');
-            if (this.mobileVoiceBtn) this.mobileVoiceBtn.classList.remove('recording');
-        };
-        
-        this.recognition.onend = () => {
-            if (this.voiceBtn) this.voiceBtn.classList.remove('recording');
-            if (this.mobileVoiceBtn) this.mobileVoiceBtn.classList.remove('recording');
-        };
-    }
-    
-    async loadTrendingSuggestions() {
-        try {
-            const response = await fetch('/news/api/trending/');
-            const data = await response.json();
-            const suggestionsList = document.getElementById('trendingSuggestions');
-            
-            if (suggestionsList && data.trending) {
-                suggestionsList.innerHTML = data.trending.slice(0, 6).map(item => `
-                    <span class="suggestion-item" data-query="${escapeHtml(item.term)}">
-                        ${escapeHtml(item.term)}
-                    </span>
-                `).join('');
-                
-                document.querySelectorAll('.suggestion-item').forEach(item => {
-                    item.addEventListener('click', () => {
-                        const query = item.dataset.query;
-                        if (this.searchInput) {
-                            this.searchInput.value = query;
-                            this.fetchResults(query);
-                            this.clearBtn.style.display = 'block';
-                        }
-                        if (this.mobileInput) this.mobileInput.value = query;
-                    });
-                });
-            }
-        } catch (error) {
-            console.error('Error loading trending:', error);
-        }
-    }
-}
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-// Initialize
-document.addEventListener('DOMContentLoaded', () => {
-    new SearchOverlay();
-    
-    // Active nav link highlighting
-    const currentPath = window.location.pathname;
-    document.querySelectorAll('.nav-link').forEach(link => {
-        const href = link.getAttribute('href');
-        if (href && href !== '/' && currentPath.startsWith(href)) {
-            link.classList.add('active');
-        } else if (href === '/' && currentPath === '/') {
-            link.classList.add('active');
-        }
+        });
     });
-});
+})();
 </script>

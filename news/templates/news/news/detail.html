@@ -1,6 +1,6 @@
 {% extends "news/base.html" %}
 
-{% block title %}{{ news.title }} - বাংলাদেশ কন্ঠ{% endblock %}
+{% block title %}{{ news.title }} - Nobokal News{% endblock %}
 
 {% block meta %}
 <meta property="og:title" content="{{ news.title }}">
@@ -15,11 +15,24 @@
     <!-- Breadcrumb navigation -->
     <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb bg-light p-3 rounded-3">
-            <li class="breadcrumb-item"><a href="{% url 'news:news_list' %}" class="text-decoration-none">হোম</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'news:dashboard' %}" class="text-decoration-none">হোম</a></li>
             <li class="breadcrumb-item"><a href="{% url 'news:news_list_by_category' news.category.slug %}" class="text-decoration-none">{{ news.category.name }}</a></li>
             <li class="breadcrumb-item active" aria-current="page">সংবাদ বিবরণ</li>
         </ol>
     </nav>
+
+    <!-- Display Messages - Moved to TOP of content area -->
+    {% if messages %}
+        <div class="messages-container mb-4">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show rounded-3 shadow-sm" role="alert">
+                    <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% elif message.tags == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
 
     <div class="row g-5">
         <!-- Main Content Area -->
@@ -41,7 +54,7 @@
 
                 <!-- Reading Progress Indicator -->
                 <div class="reading-progress mb-3">
-                    <small class="text-muted"><i class="far fa-hourglass me-1"></i> প্রায় {{ news.body|wordcount|divisibleby:200|add:1 }} মিনিট পড়ার সময়</small>
+                    <small class="text-muted"><i class="far fa-hourglass me-1"></i> প্রায় {% widthratio news.body|wordcount 200 1 %} মিনিট পড়ার সময়</small>
                 </div>
             </header>
 
@@ -65,12 +78,14 @@
 
             <!-- Article Content -->
             <article class="article-content mb-5">
+                {% if news.summary %}
                 <div class="lead fs-5 mb-4 p-4 bg-light rounded-4 border-start border-4 border-primary">
-                    {{ news.body|truncatewords:30|linebreaks }}
+                    {{ news.summary }}
                 </div>
+                {% endif %}
                 
                 <div class="article-body fs-5 lh-lg" style="font-family: 'Inter', system-ui, -apple-system, sans-serif;">
-                    {{ news.body|linebreaks }}
+                    {{ news.body|linebreaks|safe }}
                 </div>
             </article>
 
@@ -117,141 +132,113 @@
                 </div>
             </footer>
 
-<!-- Comments Section in detail.html -->
-<section class="comments-section mb-5" id="comments">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="fw-bold mb-0">
-            <i class="far fa-comments me-2 text-primary"></i>
-            Reader Comments ({{ comment_count }})
-        </h3>
-        <button class="btn btn-sm btn-outline-primary rounded-pill" onclick="scrollToCommentForm()">
-            <i class="fas fa-plus me-1"></i> Add Comment
-        </button>
-    </div>
+            <!-- Comments Section -->
+            <section class="comments-section mb-5" id="comments">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3 class="fw-bold mb-0">
+                        <i class="far fa-comments me-2 text-primary"></i>
+                        Reader Comments ({{ comments|length }})
+                    </h3>
+                    <button class="btn btn-sm btn-outline-primary rounded-pill" onclick="scrollToCommentForm()">
+                        <i class="fas fa-plus me-1"></i> Add Comment
+                    </button>
+                </div>
 
-    <!-- Display Messages -->
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show rounded-3" role="alert">
-                <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% else %}info-circle{% endif %} me-2"></i>
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        {% endfor %}
-    {% endif %}
-
-    <!-- Comments List -->
-    <div class="comments-list mb-5">
-        {% if comments %}
-            {% for comment in comments %}
-            <div class="comment-card card border-0 shadow-sm rounded-4 mb-3 hover-lift">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div class="d-flex align-items-center">
-                            <div class="avatar-circle bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" 
-                                 style="width: 45px; height: 45px;">
-                                <span class="fw-bold">{{ comment.name|first|upper }}</span>
-                            </div>
-                            <div>
-                                <h6 class="fw-bold mb-1">{{ comment.name }}</h6>
-                                <small class="text-muted">
-                                    <i class="far fa-clock me-1"></i> {{ comment.created|timesince }} ago
-                                </small>
-                                {% if not comment.is_approved %}
-                                    <span class="badge bg-warning ms-2">Pending Approval</span>
-                                {% endif %}
+                <!-- Comments List -->
+                <div class="comments-list mb-5">
+                    {% if comments %}
+                        {% for comment in comments %}
+                        <div class="comment-card card border-0 shadow-sm rounded-4 mb-3 hover-lift">
+                            <div class="card-body p-4">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-circle bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                             style="width: 45px; height: 45px;">
+                                            <span class="fw-bold">{{ comment.name|first|upper }}</span>
+                                        </div>
+                                        <div>
+                                            <h6 class="fw-bold mb-1">{{ comment.name }}</h6>
+                                            <small class="text-muted">
+                                                <i class="far fa-clock me-1"></i> {{ comment.created|timesince }} আগে
+                                            </small>
+                                            {% if not comment.is_approved %}
+                                                <span class="badge bg-warning ms-2">Pending Approval</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% if comment.is_approved %}
+                                    <button class="btn btn-sm btn-link text-muted" onclick="likeComment({{ comment.id }})">
+                                        <i class="far fa-thumbs-up"></i> {{ comment.likes }}
+                                    </button>
+                                    {% endif %}
+                                </div>
+                                <p class="mb-0 ps-5">{{ comment.body|linebreaks }}</p>
                             </div>
                         </div>
-                        {% if comment.is_approved %}
-                        <button class="btn btn-sm btn-link text-muted" onclick="likeComment({{ comment.id }})">
-                            <i class="far fa-thumbs-up"></i> {{ comment.likes }}
-                        </button>
-                        {% endif %}
-                    </div>
-                    <p class="mb-0 ps-5">{{ comment.body|linebreaks }}</p>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-5 bg-light rounded-4">
+                            <i class="far fa-comment-dots fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No comments yet. Be the first to comment!</p>
+                        </div>
+                    {% endif %}
                 </div>
-            </div>
-            {% endfor %}
-        {% else %}
-            <div class="text-center py-5 bg-light rounded-4">
-                <i class="far fa-comment-dots fa-3x text-muted mb-3"></i>
-                <p class="text-muted">No comments yet. Be the first to comment!</p>
-            </div>
-        {% endif %}
-    </div>
 
-    <!-- Add Comment Form -->
-    <div class="add-comment bg-light p-4 rounded-4" id="comment-form">
-        <h4 class="fw-bold mb-4"><i class="far fa-edit me-2 text-primary"></i>Leave a Comment</h4>
-        <form method="post" action="{% url 'news:news_comment' news.id %}" class="needs-validation" novalidate>
-            {% csrf_token %}
-            
-            <div class="row g-4">
-                <div class="col-md-6">
-                    <label for="id_name" class="form-label fw-semibold">Your Name *</label>
-                    <input type="text" name="name" class="form-control form-control-lg rounded-3" 
-                           id="id_name" required value="{{ request.user.get_full_name|default:'' }}">
-                    <div class="invalid-feedback">Please provide your name</div>
+                <!-- Add Comment Form -->
+                <div class="add-comment bg-light p-4 rounded-4" id="comment-form">
+                    <h4 class="fw-bold mb-4"><i class="far fa-edit me-2 text-primary"></i>Leave a Comment</h4>
+                    
+                    {% if user.is_authenticated %}
+                        <form method="post" action="{% url 'news:news_comment' news.id %}" class="needs-validation" novalidate>
+                            {% csrf_token %}
+                            
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <label for="id_name" class="form-label fw-semibold">Your Name *</label>
+                                    <input type="text" name="name" class="form-control form-control-lg rounded-3" 
+                                           id="id_name" required value="{{ user.get_full_name|default:user.username }}">
+                                    <div class="invalid-feedback">Please provide your name</div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label for="id_email" class="form-label fw-semibold">Email *</label>
+                                    <input type="email" name="email" class="form-control form-control-lg rounded-3" 
+                                           id="id_email" required value="{{ user.email }}">
+                                    <div class="invalid-feedback">Please provide a valid email</div>
+                                </div>
+                                
+                                <div class="col-12">
+                                    <label for="id_body" class="form-label fw-semibold">Your Comment *</label>
+                                    <textarea name="body" class="form-control form-control-lg rounded-3" 
+                                              id="id_body" rows="4" required 
+                                              placeholder="Share your thoughts..."></textarea>
+                                    <div class="invalid-feedback">Please write your comment</div>
+                                    <div class="form-text text-muted small mt-2">
+                                        <i class="fas fa-info-circle me-1"></i> 
+                                        Comments are moderated. Please be respectful and constructive.
+                                    </div>
+                                </div>
+                                
+                                <div class="col-12">
+                                    <button type="submit" class="btn btn-primary btn-lg px-5 rounded-pill">
+                                        <i class="fas fa-paper-plane me-2"></i>Submit Comment
+                                    </button>
+                                    <small class="text-muted ms-3">
+                                        <i class="fas fa-shield-alt me-1"></i> 
+                                        Your email will not be published
+                                    </small>
+                                </div>
+                            </div>
+                        </form>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-lock fa-2x text-muted mb-3"></i>
+                            <p class="mb-2">Please <a href="{% url 'news:login' %}?next={{ request.path }}#comments" class="text-primary fw-bold">login</a> to leave a comment.</p>
+                            <small class="text-muted">Don't have an account? <a href="{% url 'news:register' %}" class="text-primary">Register here</a></small>
+                        </div>
+                    {% endif %}
                 </div>
-                
-                <div class="col-md-6">
-                    <label for="id_email" class="form-label fw-semibold">Email *</label>
-                    <input type="email" name="email" class="form-control form-control-lg rounded-3" 
-                           id="id_email" required value="{{ request.user.email|default:'' }}">
-                    <div class="invalid-feedback">Please provide a valid email</div>
-                </div>
-                
-                <div class="col-12">
-                    <label for="id_body" class="form-label fw-semibold">Your Comment *</label>
-                    <textarea name="body" class="form-control form-control-lg rounded-3" 
-                              id="id_body" rows="4" required 
-                              placeholder="Share your thoughts..."></textarea>
-                    <div class="invalid-feedback">Please write your comment</div>
-                    <div class="form-text text-muted small mt-2">
-                        <i class="fas fa-info-circle me-1"></i> 
-                        Comments are moderated. Please be respectful and constructive.
-                    </div>
-                </div>
-                
-                <div class="col-12">
-                    <button type="submit" class="btn btn-primary btn-lg px-5 rounded-pill">
-                        <i class="fas fa-paper-plane me-2"></i>Submit Comment
-                    </button>
-                    <small class="text-muted ms-3">
-                        <i class="fas fa-shield-alt me-1"></i> 
-                        Your email will not be published
-                    </small>
-                </div>
-            </div>
-        </form>
-    </div>
-</section>
-
-<script>
-function scrollToCommentForm() {
-    document.getElementById('comment-form').scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'start' 
-    });
-}
-
-function likeComment(commentId) {
-    fetch(`/news/comment/${commentId}/like/`, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-            'Content-Type': 'application/json'
-        },
-        credentials: 'same-origin'
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            location.reload();
-        }
-    });
-}
-</script>
+            </section>
         </div>
 
         <!-- Sidebar -->
@@ -359,6 +346,30 @@ function likeComment(commentId) {
 
 <!-- Custom Styles -->
 <style>
+    /* Messages Container */
+    .messages-container {
+        position: sticky;
+        top: 80px;
+        z-index: 1000;
+    }
+    
+    .alert {
+        border: none;
+        border-radius: 12px;
+        animation: slideDown 0.3s ease;
+    }
+    
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
     /* Hover effects */
     .hover-lift {
         transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -413,6 +424,9 @@ function likeComment(commentId) {
         .breadcrumb {
             font-size: 0.9rem;
         }
+        .messages-container {
+            top: 60px;
+        }
     }
 </style>
 
@@ -421,10 +435,62 @@ function likeComment(commentId) {
     // Copy to clipboard function
     function copyToClipboard(text) {
         navigator.clipboard.writeText(text).then(function() {
-            alert('লিঙ্ক কপি করা হয়েছে!');
+            showToast('লিঙ্ক কপি করা হয়েছে!', 'success');
         }, function() {
-            alert('কপি করা যায়নি, ম্যানুয়ালি কপি করুন।');
+            showToast('কপি করা যায়নি, ম্যানুয়ালি কপি করুন।', 'error');
         });
+    }
+    
+    // Toast notification function
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `toast-notification toast-${type}`;
+        toast.innerHTML = `
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
+            ${message}
+        `;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.classList.add('show');
+        }, 100);
+        
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }, 3000);
+    }
+    
+    // Scroll to comment form
+    function scrollToCommentForm() {
+        document.getElementById('comment-form').scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start' 
+        });
+    }
+    
+    // Like comment function
+    function likeComment(commentId) {
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (!csrfToken) return;
+        
+        fetch(`/news/comment/${commentId}/like/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken.value,
+                'Content-Type': 'application/json'
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        })
+        .catch(error => console.error('Error:', error));
     }
     
     // Form validation
@@ -441,5 +507,42 @@ function likeComment(commentId) {
             }, false);
         });
     })();
+    
+    // Toast notification styles
+    const style = document.createElement('style');
+    style.textContent = `
+        .toast-notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 10000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        .toast-notification.show {
+            transform: translateX(0);
+        }
+        .toast-notification.toast-success {
+            border-left: 4px solid #28a745;
+        }
+        .toast-notification.toast-success i {
+            color: #28a745;
+        }
+        .toast-notification.toast-error {
+            border-left: 4px solid #dc3545;
+        }
+        .toast-notification.toast-error i {
+            color: #dc3545;
+        }
+    `;
+    document.head.appendChild(style);
 </script>
 {% endblock %}

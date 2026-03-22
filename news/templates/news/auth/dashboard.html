@@ -1,0 +1,229 @@
+{% extends "news/base.html" %}
+{% load static %}
+
+{% block title %}Dashboard - Bangladesh Kantho{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <!-- Welcome Section -->
+        <div class="col-12 mb-4">
+            <div class="card border-0 shadow-sm rounded-4 bg-gradient-primary">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h1 class="fw-bold mb-2 text-white">Welcome back, {{ user.first_name|default:user.username }}!</h1>
+                            <p class="text-white-50 mb-0">Here's what's happening with your news portal today.</p>
+                        </div>
+                        <div class="text-center">
+                            {% if user.profile_picture %}
+                            <img src="{{ user.profile_picture.url }}" alt="{{ user.username }}" 
+                                 class="rounded-circle" style="width: 60px; height: 60px; object-fit: cover;">
+                            {% else %}
+                            <div class="rounded-circle bg-white bg-opacity-25 d-flex align-items-center justify-content-center" 
+                                 style="width: 60px; height: 60px;">
+                                <i class="fas fa-user fa-2x text-white"></i>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Statistics Cards -->
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">Total News</h6>
+                            <h2 class="fw-bold mb-0">{{ total_news }}</h2>
+                        </div>
+                        <i class="fas fa-newspaper fa-2x text-primary opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">Published</h6>
+                            <h2 class="fw-bold mb-0">{{ published_news }}</h2>
+                        </div>
+                        <i class="fas fa-check-circle fa-2x text-success opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">Drafts</h6>
+                            <h2 class="fw-bold mb-0">{{ draft_news }}</h2>
+                        </div>
+                        <i class="fas fa-pen-fancy fa-2x text-warning opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-3 mb-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">Pending Comments</h6>
+                            <h2 class="fw-bold mb-0">{{ pending_comments }}</h2>
+                        </div>
+                        <i class="fas fa-comments fa-2x text-info opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent News -->
+        <div class="col-lg-8 mb-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0">
+                        <i class="fas fa-clock me-2 text-primary"></i>Recent News
+                    </h5>
+                    <a href="{% url 'news:my_news' %}" class="text-decoration-none">View all →</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_news %}
+                        <div class="list-group list-group-flush">
+                            {% for news in recent_news %}
+                            <div class="list-group-item px-4 py-3 border-0">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1 fw-semibold">
+                                            <a href="{{ news.get_absolute_url }}" class="text-decoration-none text-dark">
+                                                {{ news.title|truncatewords:8 }}
+                                            </a>
+                                        </h6>
+                                        <small class="text-muted">
+                                            {{ news.publish|timesince }} ago • 
+                                            <span class="badge bg-primary bg-opacity-10 text-primary">{{ news.category.name }}</span>
+                                            • {{ news.views }} views
+                                        </small>
+                                    </div>
+                                    <span class="badge {% if news.status == 'published' %}bg-success{% else %}bg-warning{% endif %}">
+                                        {{ news.get_status_display }}
+                                    </span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-newspaper fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No news articles yet.</p>
+                            <a href="{% url 'news:create_news' %}" class="btn btn-primary btn-sm">Create First Article</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Comments & Categories -->
+        <div class="col-lg-4 mb-4">
+            <!-- Recent Comments -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h5 class="fw-bold mb-0">
+                        <i class="fas fa-comments me-2 text-primary"></i>Recent Comments
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_comments %}
+                        <div class="list-group list-group-flush">
+                            {% for comment in recent_comments|slice:":5" %}
+                            <div class="list-group-item px-4 py-3 border-0">
+                                <div class="d-flex gap-2">
+                                    <div class="flex-shrink-0">
+                                        <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center" 
+                                             style="width: 35px; height: 35px;">
+                                            <span class="fw-bold">{{ comment.name|first|upper }}</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p class="mb-1 small">
+                                            <strong>{{ comment.name }}</strong> on 
+                                            <a href="{{ comment.news.get_absolute_url }}" class="text-decoration-none">
+                                                {{ comment.news.title|truncatechars:30 }}
+                                            </a>
+                                        </p>
+                                        <p class="text-muted small mb-0">{{ comment.body|truncatechars:60 }}</p>
+                                        <small class="text-muted">{{ comment.created|timesince }} ago</small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-comment-slash fa-2x text-muted mb-2"></i>
+                            <p class="text-muted">No comments yet</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Top Categories -->
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h5 class="fw-bold mb-0">
+                        <i class="fas fa-chart-bar me-2 text-primary"></i>Top Categories
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if category_stats %}
+                        <div class="list-group list-group-flush">
+                            {% for cat in category_stats %}
+                            <div class="list-group-item px-4 py-3 border-0">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>
+                                        <i class="fas fa-folder-open me-2 text-warning"></i>
+                                        {{ cat.name }}
+                                    </span>
+                                    <span class="badge bg-primary rounded-pill">{{ cat.news_count }} articles</span>
+                                </div>
+                                <div class="progress mt-2" style="height: 4px;">
+                                    <div class="progress-bar bg-primary" style="width: {{ cat.percentage }}%"></div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <p class="text-muted">No categories yet</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .progress {
+        background-color: #e9ecef;
+    }
+    @media (max-width: 768px) {
+        .card-body {
+            padding: 1rem;
+        }
+    }
+</style>
+{% endblock %}

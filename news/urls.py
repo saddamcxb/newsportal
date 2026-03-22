@@ -6,12 +6,29 @@ app_name = 'news'
 urlpatterns = [
     # Home & List Views
     path('', views.news_list, name='news_list'),
+
+     # Authentication
+    path('register/', views.register, name='register'),
+    path('login/', views.user_login, name='login'),
+    path('logout/', views.user_logout, name='logout'),
+    path('profile/', views.profile, name='profile'),
+    path('dashboard/', views.dashboard, name='dashboard'),
+    
+    # News Management
+    path('create-news/', views.create_news, name='create_news'),
+    path('edit-news/<int:news_id>/', views.edit_news, name='edit_news'),
+    path('delete-news/<int:news_id>/', views.delete_news, name='delete_news'),
+    path('my-news/', views.my_news, name='my_news'),
+    
+
     path('search/', views.news_search, name='search'),
     
     # Category & Tag Views
     re_path(r'^category/(?P<category_slug>[\w\u0980-\u09FF-]+)/$', 
             views.news_list, name='news_list_by_category'),
-    path('tag/<slug:tag_slug>/', views.news_by_tag, name='news_by_tag'),
+    re_path(r'^tag/(?P<tag_slug>[\w\u0980-\u09FF-]+)/$', 
+            views.news_by_tag, 
+            name='news_by_tag'),
     
     # Archive Views
     path('archive/<int:year>/', views.news_archive, name='news_archive_year'),
