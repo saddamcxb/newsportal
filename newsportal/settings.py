@@ -8,9 +8,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-cy^8ti8tsv-)@_ed%8p$zty+c57lr!fg_*6*d_6@y7l!#io35j'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = []
 
 
 INSTALLED_APPS = [
@@ -20,13 +20,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'ckeditor',
-    'ckeditor_uploader',
-    'taggit',
-
 
     'news.apps.NewsConfig',
+    'crispy_forms',
+    'crispy_bootstrap5',
 ]
+
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -55,6 +56,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'news.context_processors.categories',
             ],
         },
     },
@@ -94,6 +96,8 @@ USE_L10N = True
 USE_TZ = True
 
 
+SITE_URL = 'http://127.0.0.1:8000'
+
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
@@ -102,30 +106,12 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
-# Login/Logout URLs
-LOGIN_URL = 'news.login'
-LOGIN_REDIRECT_URL = 'dashboard'
-LOGOUT_REDIRECT_URL = 'news.news_list'
+LOGIN_URL = 'news:login'
+LOGIN_REDIRECT_URL = 'news:home'
+LOGOUT_REDIRECT_URL = 'news:home'
 
-
-AUTH_USER_MODEL = 'news.User'
-
-# Email settings (for password reset)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # For development
-
-CKEDITOR_UPLOAD_PATH = "uploads/"
-
-# Optional: Configure CKEditor toolbar and appearance
-CKEDITOR_CONFIGS = {
-    'default': {
-        'toolbar': 'full',
-        'height': 300,
-        'width': '100%',
-    },
-}
-
-# Optional: Enable thumbnails
-CKEDITOR_IMAGE_BACKEND = "pillow"
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # Development
+DEFAULT_FROM_EMAIL = 'newsportal@example.com'
 
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

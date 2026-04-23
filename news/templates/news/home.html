@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<!-- Hero Carousel -->
+{% if featured_news %}
+<div id="newsCarousel" class="carousel slide mb-5" data-bs-ride="carousel">
+    <div class="carousel-indicators">
+        {% for news in featured_news %}
+        <button type="button" data-bs-target="#newsCarousel" data-bs-slide-to="{{ forloop.counter0 }}" {% if forloop.first %}class="active"{% endif %}></button>
+        {% endfor %}
+    </div>
+    <div class="carousel-inner">
+        {% for news in featured_news %}
+        <div class="carousel-item {% if forloop.first %}active{% endif %}">
+            {% if news.image and news.image.url %}
+            <img src="{{ news.image.url }}" class="d-block w-100" alt="{{ news.title }}" style="height: 500px; object-fit: cover;">
+            {% else %}
+            <div class="bg-secondary d-flex align-items-center justify-content-center" style="height: 500px;">
+                <i class="fas fa-image fa-4x text-white"></i>
+                <span class="text-white ms-3">কোন ছবি নেই</span>
+            </div>
+            {% endif %}
+            <div class="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded p-3">
+                <h3>{{ news.title }}</h3>
+                <p>{{ news.content|striptags|truncatechars:150 }}</p>
+                <a href="{% url 'news:news_detail' news.slug %}" class="btn btn-danger">পড়ুন</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <button class="carousel-control-prev" type="button" data-bs-target="#newsCarousel" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon"></span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#newsCarousel" data-bs-slide="next">
+        <span class="carousel-control-next-icon"></span>
+    </button>
+</div>
+{% endif %}
+
+<div class="container">
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-newspaper"></i> সর্বশেষ সংবাদ</h2>
+                <a href="{% url 'news:all_news' %}" class="btn btn-outline-danger">সব দেখুন →</a>
+            </div>
+            
+            <div class="row">
+                {% for news in latest_news %}
+                <div class="col-md-6 mb-4">
+                    <div class="card h-100 shadow-sm hover-card">
+                        {% if news.image and news.image.url %}
+                        <img src="{{ news.image.url }}" class="card-img-top" alt="{{ news.title }}" style="height: 200px; object-fit: cover;">
+                        {% else %}
+                        <div class="bg-secondary d-flex align-items-center justify-content-center" style="height: 200px;">
+                            <i class="fas fa-image fa-3x text-white"></i>
+                            <span class="text-white ms-2">কোন ছবি নেই</span>
+                        </div>
+                        {% endif %}
+                        <div class="card-body">
+                            <span class="badge bg-danger mb-2">{{ news.category.name }}</span>
+                            <h5 class="card-title">{{ news.title|truncatechars:60 }}</h5>
+                            <p class="card-text text-muted">{{ news.content|striptags|truncatechars:100 }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small><i class="fas fa-eye"></i> {{ news.views }}</small>
+                                <small><i class="fas fa-heart"></i> {{ news.total_likes }}</small>
+                                <small><i class="fas fa-comment"></i> {{ news.comments.count }}</small>
+                                <a href="{% url 'news:news_detail' news.slug %}" class="btn btn-sm btn-primary">পড়ুন</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="alert alert-info">কোন সংবাদ নেই।</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Search Bar -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="fas fa-search"></i> সংবাদ অনুসন্ধান</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{% url 'news:search' %}" method="GET">
+                        <div class="input-group">
+                            <input type="text" name="q" class="form-control" placeholder="আপনার পছন্দের সংবাদ খুঁজুন...">
+                            <button class="btn btn-danger" type="submit">খুঁজুন</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Categories -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="fas fa-tags"></i> বিষয়শ্রেণী</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for category in categories %}
+                        <div class="col-6 mb-2">
+                            <a href="{% url 'news:category_news' category.slug %}" class="text-decoration-none">
+                                <i class="fas {{ category.icon|default:'fa-folder' }}"></i> {{ category.name }}
+                                <span class="badge bg-secondary">{{ category.news_count }}</span>
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Popular News -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="fas fa-fire"></i> জনপ্রিয় সংবাদ</h5>
+                </div>
+                <div class="card-body">
+                    {% for news in popular_news %}
+                    <div class="mb-3 pb-3 border-bottom">
+                        <a href="{% url 'news:news_detail' news.slug %}" class="text-decoration-none">
+                            <div class="d-flex">
+                                {% if news.image and news.image.url %}
+                                <img src="{{ news.image.url }}" style="width: 60px; height: 60px; object-fit: cover;" class="rounded me-2">
+                                {% else %}
+                                <div class="bg-secondary d-flex align-items-center justify-content-center rounded me-2" style="width: 60px; height: 60px;">
+                                    <i class="fas fa-image fa-2x text-white"></i>
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <h6 class="mb-1">{{ news.title|truncatechars:50 }}</h6>
+                                    <small class="text-muted"><i class="fas fa-eye"></i> {{ news.views }} বার দেখা হয়েছে</small>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Newsletter -->
+            <div class="card shadow-sm bg-light">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="fas fa-envelope"></i> নিউজলেটার</h5>
+                </div>
+                <div class="card-body">
+                    <p>নিয়মিত আপডেট পেতে সাবস্ক্রাইব করুন</p>
+                    <form method="POST" action="{% url 'news:newsletter' %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <input type="email" name="email" class="form-control" placeholder="আপনার ইমেইল" required>
+                        </div>
+                        <button type="submit" class="btn btn-danger w-100">সাবস্ক্রাইব</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.hover-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.hover-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+}
+.carousel-caption {
+    bottom: 20%;
+}
+@media (max-width: 768px) {
+    .carousel-item img {
+        height: 300px !important;
+    }
+    .carousel-caption h3 {
+        font-size: 1rem;
+    }
+    .carousel-caption p {
+        font-size: 0.8rem;
+    }
+}
+</style>
+{% endblock %}

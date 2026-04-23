@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}নিউজ ম্যানেজমেন্ট{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="fas fa-tasks"></i> নিউজ ম্যানেজমেন্ট</h1>
+                <a href="{% url 'news:news_create' %}" class="btn btn-danger">
+                    <i class="fas fa-plus"></i> নতুন নিউজ
+                </a>
+            </div>
+            
+            <div class="card shadow">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>#</th>
+                                    <th>শিরোনাম</th>
+                                    <th>ক্যাটাগরি</th>
+                                    <th>স্ট্যাটাস</th>
+                                    <th>ভিউ</th>
+                                    <th>তারিখ</th>
+                                    <th>অ্যাকশন</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for news in page_obj %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ news.title|truncatechars:40 }}</td>
+                                    <td>{{ news.category.name }}</td>
+                                    <td>
+                                        {% if news.status == 'published' %}
+                                        <span class="badge bg-success">প্রকাশিত</span>
+                                        {% elif news.status == 'draft' %}
+                                        <span class="badge bg-warning">ড্রাফট</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">আর্কাইভড</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ news.views }}</td>
+                                    <td>{{ news.published_date|date:"d M Y" }}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'news:news_edit' news.id %}" class="btn btn-primary">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{% url 'news:news_delete' news.id %}" class="btn btn-danger">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                            <a href="{{ news.get_absolute_url }}" target="_blank" class="btn btn-info">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center">কোন নিউজ নেই। প্রথমে একটি নিউজ তৈরি করুন।</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    {% if page_obj.has_other_pages %}
+                    <nav>
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                            <li class="page-item"><a class="page-link" href="?page=1">&laquo;</a></li>
+                            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">পূর্ববর্তী</a></li>
+                            {% endif %}
+                            
+                            <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+                            
+                            {% if page_obj.has_next %}
+                            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">পরবর্তী</a></li>
+                            <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">&raquo;</a></li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

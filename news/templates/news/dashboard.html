@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}ড্যাশবোর্ড - নিউজপোর্টাল{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4"><i class="fas fa-chart-line"></i> ড্যাশবোর্ড</h1>
+        </div>
+    </div>
+    
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card bg-primary text-white shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">মোট নিউজ</h6>
+                            <h2 class="mb-0">{{ total_news }}</h2>
+                        </div>
+                        <i class="fas fa-newspaper fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-success text-white shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">প্রকাশিত</h6>
+                            <h2 class="mb-0">{{ published_news }}</h2>
+                        </div>
+                        <i class="fas fa-check-circle fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-warning text-white shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">ড্রাফট</h6>
+                            <h2 class="mb-0">{{ draft_news }}</h2>
+                        </div>
+                        <i class="fas fa-pen fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-info text-white shadow">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">মোট ভিউ</h6>
+                            <h2 class="mb-0">{{ total_views }}</h2>
+                        </div>
+                        <i class="fas fa-eye fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-fire"></i> জনপ্রিয়তা</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>মোট লাইক</span>
+                        <strong>{{ total_likes }}</strong>
+                    </div>
+                    <div class="progress mb-3">
+                        <div class="progress-bar bg-danger" style="width: 75%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-comments"></i> সাম্প্রতিক মন্তব্য</h5>
+                </div>
+                <div class="card-body">
+                    {% for comment in recent_comments %}
+                    <div class="mb-2 pb-2 border-bottom">
+                        <small><strong>{{ comment.user.username }}</strong>: {{ comment.text|truncatechars:50 }}</small>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted">কোন মন্তব্য নেই</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="text-center mt-3">
+        <a href="{% url 'news:news_create' %}" class="btn btn-danger btn-lg">
+            <i class="fas fa-plus"></i> নতুন নিউজ তৈরি করুন
+        </a>
+    </div>
+</div>
+{% endblock %}

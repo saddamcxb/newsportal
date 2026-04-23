@@ -1,0 +1,502 @@
+{% extends "base.html" %}
+
+{% block title %}{{ news.title }} - নিউজপোর্টাল{% endblock %}
+
+{% block meta %}
+<meta property="og:title" content="{{ news.title }}">
+<meta property="og:description" content="{{ news.content|striptags|truncatewords:30 }}">
+{% if news.image %}<meta property="og:image" content="{{ news.image.url }}">{% endif %}
+<meta property="og:url" content="{{ request.build_absolute_uri }}">
+<meta name="twitter:card" content="summary_large_image">
+{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <!-- Breadcrumb navigation -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb bg-light p-3 rounded-3">
+            <li class="breadcrumb-item"><a href="{% url 'news:home' %}" class="text-decoration-none">হোম</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'news:category_news' news.category.slug %}" class="text-decoration-none">{{ news.category.name }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">সংবাদ বিবরণ</li>
+        </ol>
+    </nav>
+
+    <!-- Display Messages -->
+    {% if messages %}
+        <div class="messages-container mb-4">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show rounded-3 shadow-sm" role="alert">
+                    <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% elif message.tags == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="row g-5">
+        <!-- Main Content Area -->
+        <div class="col-lg-8">
+            <!-- Article Header -->
+            <header class="article-header mb-4">
+                <h1 class="display-5 fw-bold mb-3 lh-1">{{ news.title }}</h1>
+                
+                <!-- Article Meta Information -->
+                <div class="d-flex flex-wrap align-items-center gap-3 text-muted mb-4">
+                    <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill">
+                        <i class="fas fa-tag me-1"></i> {{ news.category.name }}
+                    </span>
+                    <span><i class="far fa-calendar-alt me-1"></i> {{ news.published_date|date:"F j, Y" }}</span>
+                    <span><i class="far fa-clock me-1"></i> {{ news.published_date|date:"g:i A" }}</span>
+                    <span><i class="far fa-user me-1"></i> {{ news.author.username }}</span>
+                    <span><i class="far fa-eye me-1"></i> {{ news.views }} বার দেখা</span>
+                    <span><i class="far fa-heart me-1"></i> {{ news.total_likes }} লাইক</span>
+                </div>
+
+                <!-- Reading Progress Indicator -->
+                <div class="reading-progress mb-3">
+                    <small class="text-muted"><i class="far fa-hourglass me-1"></i> প্রায় {% widthratio news.content|wordcount 200 1 %} মিনিট পড়ার সময়</small>
+                </div>
+            </header>
+
+            <!-- Featured Image -->
+            {% if news.image and news.image.url %}
+            <figure class="featured-image mb-5">
+                <div class="position-relative">
+                    <img src="{{ news.image.url }}" 
+                         class="img-fluid rounded-4 shadow-lg w-100" 
+                         alt="{{ news.title }}" 
+                         style="max-height: 500px; object-fit: cover; object-position: center;"
+                         loading="lazy">
+                </div>
+            </figure>
+            {% endif %}
+
+            <!-- Article Content -->
+            <article class="article-content mb-5">
+                <div class="article-body fs-5 lh-lg" style="font-family: 'Inter', system-ui, -apple-system, sans-serif;">
+                    {{ news.content|safe }}
+                </div>
+            </article>
+
+            <!-- Article Footer with Share Buttons -->
+            <footer class="article-footer mb-5">
+                <!-- Share Buttons -->
+                <div class="share-section bg-light p-4 rounded-4">
+                    <h6 class="fw-bold mb-3"><i class="fas fa-share-alt me-2 text-primary"></i>শেয়ার করুন:</h6>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri }}" 
+                           target="_blank" class="btn btn-outline-primary rounded-pill px-4" rel="noopener">
+                            <i class="fab fa-facebook-f me-2"></i>Facebook
+                        </a>
+                        <a href="https://twitter.com/intent/tweet?text={{ news.title|urlencode }}&url={{ request.build_absolute_uri }}" 
+                           target="_blank" class="btn btn-outline-info rounded-pill px-4" rel="noopener">
+                            <i class="fab fa-twitter me-2"></i>Twitter
+                        </a>
+                        <a href="https://wa.me/?text={{ news.title|urlencode }}%20{{ request.build_absolute_uri }}" 
+                           target="_blank" class="btn btn-outline-success rounded-pill px-4" rel="noopener">
+                            <i class="fab fa-whatsapp me-2"></i>WhatsApp
+                        </a>
+                        <button onclick="copyToClipboard('{{ request.build_absolute_uri }}')" 
+                                class="btn btn-outline-secondary rounded-pill px-4">
+                            <i class="fas fa-link me-2"></i>কপি লিঙ্ক
+                        </button>
+                    </div>
+                </div>
+            </footer>
+
+            <!-- Like Button -->
+            <div class="text-center my-4">
+                <button id="like-btn" class="btn btn-lg {% if user_liked %}btn-danger{% else %}btn-outline-danger{% endif %} rounded-pill px-5"
+                        data-news-id="{{ news.id }}">
+                    <i class="fas fa-heart me-2"></i> 
+                    <span id="like-count">{{ news.total_likes }}</span> লাইক
+                </button>
+            </div>
+
+            <!-- Comments Section -->
+            <section class="comments-section mb-5" id="comments">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3 class="fw-bold mb-0">
+                        <i class="far fa-comments me-2 text-primary"></i>
+                        মন্তব্য ({{ comments|length }})
+                    </h3>
+                    <button class="btn btn-sm btn-outline-primary rounded-pill" onclick="scrollToCommentForm()">
+                        <i class="fas fa-plus me-1"></i> মন্তব্য করুন
+                    </button>
+                </div>
+
+                <!-- Comments List -->
+                <div class="comments-list mb-5" id="comments-list">
+                    {% if comments %}
+                        {% for comment in comments %}
+                        <div class="comment-card card border-0 shadow-sm rounded-4 mb-3 hover-lift">
+                            <div class="card-body p-4">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-circle bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                             style="width: 45px; height: 45px;">
+                                            <span class="fw-bold">{{ comment.user.username|first|upper }}</span>
+                                        </div>
+                                        <div>
+                                            <h6 class="fw-bold mb-1">{{ comment.user.username }}</h6>
+                                            <small class="text-muted">
+                                                <i class="far fa-clock me-1"></i> {{ comment.created_at|timesince }} আগে
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="mb-0 ps-5">{{ comment.text|linebreaks }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-5 bg-light rounded-4">
+                            <i class="far fa-comment-dots fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">কোন মন্তব্য নেই। প্রথম মন্তব্য করুন!</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Add Comment Form -->
+                <div class="add-comment bg-light p-4 rounded-4" id="comment-form">
+                    <h4 class="fw-bold mb-4"><i class="far fa-edit me-2 text-primary"></i>মন্তব্য করুন</h4>
+                    
+                    {% if user.is_authenticated %}
+                        <form id="comment-form-ajax" method="post">
+                            {% csrf_token %}
+                            
+                            <div class="row g-4">
+                                <div class="col-12">
+                                    <label for="comment-text" class="form-label fw-semibold">আপনার মন্তব্য *</label>
+                                    <textarea name="comment" id="comment-text" class="form-control form-control-lg rounded-3" 
+                                              rows="4" required 
+                                              placeholder="আপনার মন্তব্য লিখুন..."></textarea>
+                                </div>
+                                
+                                <div class="col-12">
+                                    <button type="submit" class="btn btn-primary btn-lg px-5 rounded-pill">
+                                        <i class="fas fa-paper-plane me-2"></i>মন্তব্য করুন
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-lock fa-2x text-muted mb-3"></i>
+                            <p class="mb-2">মন্তব্য করতে <a href="{% url 'news:login' %}?next={{ request.path }}#comments" class="text-primary fw-bold">লগইন</a> করুন</p>
+                            <small class="text-muted">অ্যাকাউন্ট নেই? <a href="{% url 'news:register' %}" class="text-primary">রেজিস্টার করুন</a></small>
+                        </div>
+                    {% endif %}
+                </div>
+            </section>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <div class="sticky-sidebar" style="top: 90px;">
+                <!-- Categories Widget -->
+                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                    <div class="card-header bg-white border-0 pt-4 px-4">
+                        <h5 class="fw-bold mb-0">
+                            <i class="fas fa-th-large me-2 text-primary"></i>
+                            বিভাগসমূহ
+                        </h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush">
+                            {% for cat in categories %}
+                            <a href="{% url 'news:category_news' cat.slug %}" 
+                               class="list-group-item list-group-item-action d-flex justify-content-between align-items-center px-4 py-3 border-0 hover-bg-light">
+                                <span>
+                                    <i class="fas fa-folder-open me-2 text-warning opacity-75"></i>
+                                    {{ cat.name }}
+                                </span>
+                                <span class="badge bg-primary rounded-pill">{{ cat.news_set.count }}</span>
+                            </a>
+                            {% empty %}
+                            <div class="px-4 py-3 text-muted">কোনো বিভাগ নেই</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Related News Widget -->
+                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                    <div class="card-header bg-white border-0 pt-4 px-4">
+                        <h5 class="fw-bold mb-0">
+                            <i class="fas fa-newspaper me-2 text-primary"></i>
+                            সম্পর্কিত সংবাদ
+                        </h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush">
+                            {% for related in related_news %}
+                            <a href="{% url 'news:news_detail' related.slug %}" 
+                               class="list-group-item list-group-item-action px-4 py-3 border-0 hover-bg-light">
+                                <div class="d-flex">
+                                    {% if related.image %}
+                                    <div class="flex-shrink-0 me-3">
+                                        <img src="{{ related.image.url }}" 
+                                             alt="{{ related.title }}" 
+                                             style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">
+                                    </div>
+                                    {% endif %}
+                                    <div class="flex-grow-1">
+                                        <h6 class="fw-semibold mb-1">{{ related.title|truncatewords:8 }}</h6>
+                                        <small class="text-muted">
+                                            <i class="far fa-clock me-1"></i> {{ related.published_date|timesince }} আগে
+                                        </small>
+                                    </div>
+                                </div>
+                            </a>
+                            {% empty %}
+                            <div class="px-4 py-3 text-muted text-center">
+                                <i class="fas fa-search fa-2x mb-2 opacity-50"></i>
+                                <p>সম্পর্কিত কোনো সংবাদ নেই</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Popular News Widget -->
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-header bg-white border-0 pt-4 px-4">
+                        <h5 class="fw-bold mb-0">
+                            <i class="fas fa-fire me-2 text-danger"></i>
+                            জনপ্রিয় সংবাদ
+                        </h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush">
+                            {% for popular in popular_news|slice:":5" %}
+                            <a href="{% url 'news:news_detail' popular.slug %}" 
+                               class="list-group-item list-group-item-action px-4 py-3 border-0">
+                                <div class="d-flex align-items-center">
+                                    <span class="fw-bold text-primary me-3" style="font-size: 1.2rem;">{{ forloop.counter }}.</span>
+                                    <div>
+                                        <h6 class="fw-semibold mb-1">{{ popular.title|truncatewords:6 }}</h6>
+                                        <small class="text-muted">
+                                            <i class="far fa-eye me-1"></i> {{ popular.views }} বার দেখা
+                                        </small>
+                                    </div>
+                                </div>
+                            </a>
+                            {% empty %}
+                            <div class="px-4 py-3 text-muted">জনপ্রিয় সংবাদ নেই</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .messages-container {
+        position: sticky;
+        top: 80px;
+        z-index: 1000;
+    }
+    
+    .alert {
+        border: none;
+        border-radius: 12px;
+        animation: slideDown 0.3s ease;
+    }
+    
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .hover-lift {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 24px -8px rgba(0,0,0,0.15) !important;
+    }
+    
+    .hover-bg-light:hover {
+        background-color: #f8f9fa !important;
+    }
+    
+    .avatar-circle {
+        font-size: 1.2rem;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .article-body p {
+        margin-bottom: 1.5rem;
+        line-height: 1.8;
+    }
+    
+    .sticky-sidebar {
+        position: sticky;
+        top: 90px;
+    }
+    
+    @media (max-width: 768px) {
+        .display-5 {
+            font-size: 2rem;
+        }
+        .article-body {
+            font-size: 1rem !important;
+        }
+    }
+</style>
+
+<script>
+    // Copy to clipboard function
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(function() {
+            showToast('লিঙ্ক কপি করা হয়েছে!', 'success');
+        }, function() {
+            showToast('কপি করা যায়নি', 'error');
+        });
+    }
+    
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `toast-notification toast-${type}`;
+        toast.innerHTML = `
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
+            ${message}
+        `;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.classList.add('show');
+        }, 100);
+        
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }, 3000);
+    }
+    
+    function scrollToCommentForm() {
+        document.getElementById('comment-form').scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start' 
+        });
+    }
+    
+    // AJAX Like
+    document.getElementById('like-btn')?.addEventListener('click', function() {
+        const newsId = this.dataset.newsId;
+        fetch(`/like/${newsId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('like-count').textContent = data.total_likes;
+            if (data.liked) {
+                this.classList.remove('btn-outline-danger');
+                this.classList.add('btn-danger');
+            } else {
+                this.classList.remove('btn-danger');
+                this.classList.add('btn-outline-danger');
+            }
+        });
+    });
+    
+    // AJAX Comment
+    document.getElementById('comment-form-ajax')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const commentText = document.getElementById('comment-text').value;
+        
+        fetch('{% url "news:add_comment_ajax" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `news_id={{ news.id }}&comment=${encodeURIComponent(commentText)}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const commentHtml = `
+                    <div class="comment-card card border-0 shadow-sm rounded-4 mb-3 hover-lift">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-circle bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                         style="width: 45px; height: 45px;">
+                                        <span class="fw-bold">{{ user.username|first|upper }}</span>
+                                    </div>
+                                    <div>
+                                        <h6 class="fw-bold mb-1">{{ user.username }}</h6>
+                                        <small class="text-muted">এখনই</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="mb-0 ps-5">${commentText}</p>
+                        </div>
+                    </div>
+                `;
+                const commentsList = document.getElementById('comments-list');
+                if (commentsList.innerHTML.includes('কোন মন্তব্য নেই')) {
+                    commentsList.innerHTML = commentHtml;
+                } else {
+                    commentsList.insertAdjacentHTML('afterbegin', commentHtml);
+                }
+                document.getElementById('comment-text').value = '';
+                showToast('মন্তব্য সফল হয়েছে!', 'success');
+            }
+        });
+    });
+    
+    // Toast styles
+    const style = document.createElement('style');
+    style.textContent = `
+        .toast-notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 10000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        .toast-notification.show {
+            transform: translateX(0);
+        }
+        .toast-notification.toast-success {
+            border-left: 4px solid #28a745;
+        }
+        .toast-notification.toast-success i {
+            color: #28a745;
+        }
+        .toast-notification.toast-error {
+            border-left: 4px solid #dc3545;
+        }
+        .toast-notification.toast-error i {
+            color: #dc3545;
+        }
+    `;
+    document.head.appendChild(style);
+</script>
+{% endblock %}
